@@ -107,6 +107,8 @@ export function createApp() {
   });
 
   const api = express.Router();
+  // Default: never cache API responses (auth state, dashboards). Public list routes opt in to caching explicitly.
+  api.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   api.use(apiLimiter);
   api.use(loadSession);
   api.use(csrfProtection);
@@ -138,9 +140,10 @@ export function createApp() {
   const dist = path.resolve(import.meta.dirname, '../../client/dist');
   if (isProd && existsSync(dist)) {
     app.use(express.static(dist, { index: false, maxAge: '1y', immutable: true, setHeaders: (res, file) => {
-      if (file.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+      if (file.endsWith('.html')) res.setHeader('Cache-Control', 'no-store');
     } }));
-    app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html'), { headers: { 'Cache-Control': 'no-cache' } }));
+    // no-store: the Back button after sign-out can't restore a signed-in page from cache
+    app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html'), { headers: { 'Cache-Control': 'no-store' } }));
   }
 
   app.use(errorHandler);

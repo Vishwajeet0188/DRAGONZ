@@ -1,8 +1,16 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api.js';
 
 const AuthContext = createContext(null);
+
+const PROTECTED = /^\/(dashboard|settings|admin)(\/|$)/;
+const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('dz-auth') : null;
+
+/** Leave any signed-in-only page with a full reload, so no in-memory data survives sign-out. */
+function leaveProtectedPage() {
+  if (PROTECTED.test(window.location.pathname)) window.location.replace('/login');
+}
 
 export function AuthProvider({ children }) {
   const qc = useQueryClient();
@@ -12,6 +20,29 @@ export function AuthProvider({ children }) {
     staleTime: 5 * 60_000,
     retry: 1,
   });
+
+  useEffect(() => {
+    const dropUser = () => {
+      if (!qc.getQueryData(['me'])) return;
+      qc.clear();
+      qc.setQueryData(['me'], null);
+      leaveProtectedPage();
+    };
+    // Signed out in another tab.
+    const onMessage = (e) => { if (e.data === 'logout') dropUser(); };
+    // Any API call answered 401 → the session is gone.
+    const onUnauthorized = () => dropUser();
+    // Page restored from the Back/Forward cache → re-check who is signed in.
+    const onPageShow = (e) => { if (e.persisted) qc.invalidateQueries({ queryKey: ['me'] }); };
+    channel?.addEventListener('message', onMessage);
+    window.addEventListener('dz:unauthorized', onUnauthorized);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      channel?.removeEventListener('message', onMessage);
+      window.removeEventListener('dz:unauthorized', onUnauthorized);
+      window.removeEventListener('pageshow', onPageShow);
+    };
+  }, [qc]);
 
   const value = useMemo(() => {
     const user = data ?? null;
@@ -32,9 +63,15 @@ export function AuthProvider({ children }) {
         return r.data.user;
       },
       async logout() {
-        await api.post('/auth/logout');
-        qc.clear();
-        qc.setQueryData(['me'], null);
+        try {
+          await api.post('/auth/logout');
+        } finally {
+          // Even if the request failed, forget everything locally and start fresh.
+          qc.clear();
+          qc.setQueryData(['me'], null);
+          channel?.postMessage('logout');
+          window.location.replace('/');
+        }
       },
     };
   }, [data, isLoading, qc]);

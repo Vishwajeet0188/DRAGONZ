@@ -42,6 +42,8 @@ async function request(method, url, body, { retry = true, keepalive = false } = 
       await getCsrf(true);
       return request(method, url, body, { retry: false, keepalive });
     }
+    // Session gone (signed out elsewhere / expired): tell the app so it drops the cached user.
+    if (res.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event('dz:unauthorized'));
     const e = json.error ?? {};
     throw new ApiError(res.status, e.code ?? 'ERROR', e.message ?? 'Something went wrong', e.details);
   }
