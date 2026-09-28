@@ -37,7 +37,7 @@ describe('YouTube provider', () => {
       calls.push(u.pathname.split('/').pop());
       assert.equal(u.searchParams.get('key'), 'test-key');
       if (u.pathname.endsWith('/channels') && u.searchParams.get('forHandle')) return json({ items: [{ id: CH }] });
-      if (u.pathname.endsWith('/channels')) return json({ items: [{ id: CH, statistics: { subscriberCount: '184000', hiddenSubscriberCount: false }, contentDetails: { relatedPlaylists: { uploads: 'UU' + 'a'.repeat(22) } } }] });
+      if (u.pathname.endsWith('/channels')) return json({ items: [{ id: CH, snippet: { thumbnails: { high: { url: 'https://yt3.ggpht.com/navy=s800' } } }, statistics: { subscriberCount: '184000', hiddenSubscriberCount: false }, contentDetails: { relatedPlaylists: { uploads: 'UU' + 'a'.repeat(22) } } }] });
       if (u.pathname.endsWith('/playlistItems')) return json({ items: ['v_live', 'v_vod', 'v_soon'].map((id) => ({ contentDetails: { videoId: id } })) });
       if (u.pathname.endsWith('/videos')) return json({ items: [
         { id: 'v_live', snippet: { title: 'Night Ops LIVE', liveBroadcastContent: 'live', thumbnails: { high: { url: 'https://i.ytimg.com/vi/v_live/hq.jpg' } } }, liveStreamingDetails: { actualStartTime: '2026-09-28T10:00:00Z', concurrentViewers: '2400' }, contentDetails: { duration: 'P0D' }, statistics: {} },
@@ -48,7 +48,7 @@ describe('YouTube provider', () => {
     };
     const yt = createYouTubeProvider({ apiKey: 'test-key', fetchImpl });
     const r = await yt.sync([{ id: 'acc1', memberId: 'm1', handle: '@dragonnav', url: 'https://www.youtube.com/@dragonnav', externalId: null }]);
-    assert.deepEqual(r.accounts, [{ id: 'acc1', externalId: CH, followerCount: 184000 }]);
+    assert.deepEqual(r.accounts, [{ id: 'acc1', externalId: CH, followerCount: 184000, avatarUrl: 'https://yt3.ggpht.com/navy=s800' }]);
     assert.equal(r.live.length, 1);
     assert.equal(r.live[0].viewerCount, 2400);
     assert.equal(r.live[0].url, 'https://www.youtube.com/watch?v=v_live');
@@ -123,7 +123,7 @@ describe('sync engine (database)', () => {
       async sync(accounts) {
         const a = accounts[0];
         return {
-          accounts: [{ id: a.id, externalId: CH, followerCount: 5000 }],
+          accounts: [{ id: a.id, externalId: CH, followerCount: 5000, avatarUrl: 'https://yt3.ggpht.com/chan=s800' }],
           videos: [{ accountId: a.id, memberId: a.memberId, externalId: 'vid1', title: 'VOD', url: 'https://www.youtube.com/watch?v=vid1', thumbnailUrl: null, durationSec: 60, viewCount: 10, publishedAt: new Date() }],
           live: state === 'live' ? [{ accountId: a.id, memberId: a.memberId, externalId: 'stream1', title: 'LIVE!', url: 'https://www.youtube.com/watch?v=stream1', thumbnailUrl: null, viewerCount: 50, startedAt: new Date() }] : [],
           checkedAccountIds: [a.id],
@@ -142,8 +142,13 @@ describe('sync engine (database)', () => {
     assert.equal(acc.externalId, CH);
     assert.equal(acc.followerCount, 5000);
     assert.ok(acc.lastSyncedAt);
+    const [mem] = await db.select().from(schema.members).where(eq(schema.members.id, acc.memberId));
+    assert.equal(mem.avatarUrl, 'https://yt3.ggpht.com/chan=s800', 'channel picture fills a missing member photo');
+    await db.update(schema.members).set({ avatarUrl: 'https://example.com/uploaded.webp' }).where(eq(schema.members.id, acc.memberId));
 
     await svc.run({ force: true }); // still live → no second alert
+    const [mem2] = await db.select().from(schema.members).where(eq(schema.members.id, acc.memberId));
+    assert.equal(mem2.avatarUrl, 'https://example.com/uploaded.webp', 'an uploaded photo is never overwritten');
     assert.equal(startedEvents.length, 1);
     assert.equal((await db.select().from(schema.videos)).length, 1, 'videos are upserted, not duplicated');
 

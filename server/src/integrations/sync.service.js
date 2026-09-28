@@ -5,7 +5,7 @@
 //   live → live       : refresh title / viewers / thumbnail
 //   live → not live   : mark row ended (isLive=false, endedAt)
 // Safety nets: rows not refreshed for STALE_MS are ended; MOCK demo streams are ended in live mode.
-import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { db, schema } from '../db/index.js';
 import { logger } from '../lib/logger.js';
 
@@ -48,6 +48,14 @@ async function persistAccounts(result, now) {
     if (typeof a.followerCount === 'number' && Number.isFinite(a.followerCount)) set.followerCount = a.followerCount;
     try {
       await db.update(platformAccounts).set(set).where(eq(platformAccounts.id, a.id));
+      // Fill in a missing member photo from the channel picture (never overwrites an uploaded one).
+      if (typeof a.avatarUrl === 'string' && a.avatarUrl.startsWith('https://')) {
+        await db.update(members).set({ avatarUrl: a.avatarUrl.slice(0, 500), updatedAt: now })
+          .where(and(
+            sql`${members.id} = (select ${platformAccounts.memberId} from ${platformAccounts} where ${platformAccounts.id} = ${a.id})`,
+            or(isNull(members.avatarUrl), eq(members.avatarUrl, '')),
+          ));
+      }
     } catch (err) {
       if (err.code !== '23505' && err.cause?.code !== '23505') throw err;
       // Same channel linked to two members — keep the first, flag this one.

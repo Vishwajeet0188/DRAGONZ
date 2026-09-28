@@ -90,6 +90,8 @@ export function createYouTubeProvider({ apiKey, fetchImpl = fetch, videosPerChan
           id: acc.id,
           externalId: channelId,
           followerCount: stats.hiddenSubscriberCount ? undefined : num(stats.subscriberCount),
+          // Public channel picture — used as the member's photo when an admin hasn't uploaded one.
+          ...(bestThumb(info.snippet?.thumbnails) && { avatarUrl: bestThumb(info.snippet.thumbnails) }),
         });
         const uploads = info.contentDetails?.relatedPlaylists?.uploads;
         if (!uploads) { result.checkedAccountIds.push(acc.id); continue; }
