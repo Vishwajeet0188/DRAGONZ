@@ -84,7 +84,7 @@ Your link is `https://YOUR-APP.onrender.com`. Every `git push` (VS Code: Commit 
 
 ## Later (optional)
 
-**Emails** (verification, password reset, live alerts): brevo.com → verify a sender → **SMTP & API → Generate SMTP key**. In Render → Environment set `EMAIL_PROVIDER=smtp`, `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM="Dragonz Central <your-verified-sender>"`.
+**Emails** (verification, password reset, live alerts): Render's free plan **blocks SMTP ports**, so use Brevo's HTTPS API. brevo.com → verify a sender (Settings → Senders) → **Settings → SMTP & API → API Keys → Generate a new API key**. In Render → Environment set `EMAIL_PROVIDER=brevo`, `EMAIL_API_KEY=<the API key>`, `EMAIL_FROM="Dragonz Central <your-verified-sender>"`.
 
 **Kick**: add `KICK_CLIENT_ID` and `KICK_CLIENT_SECRET` in Render → Environment.
 

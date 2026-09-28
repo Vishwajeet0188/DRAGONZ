@@ -13,7 +13,7 @@ const schema = z.object({
   SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
-  EMAIL_PROVIDER: z.enum(['console', 'resend', 'smtp']).default('console'),
+  EMAIL_PROVIDER: z.enum(['console', 'resend', 'brevo', 'smtp']).default('console'),
   EMAIL_API_KEY: z.string().optional().default(''),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().default(587),
@@ -59,6 +59,8 @@ if (env.NODE_ENV === 'production') {
   if (env.STREAMING_MODE === 'mock') problems.push('STREAMING_MODE=mock is not allowed in production');
   if (env.EMAIL_PROVIDER === 'console') console.warn('⚠ EMAIL_PROVIDER=console in production: verification/alert emails will NOT be delivered.');
   if (env.EMAIL_PROVIDER === 'smtp' && !(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS)) problems.push('EMAIL_PROVIDER=smtp needs SMTP_HOST, SMTP_USER and SMTP_PASS');
+  if (['brevo', 'resend'].includes(env.EMAIL_PROVIDER) && !env.EMAIL_API_KEY) problems.push(`EMAIL_PROVIDER=${env.EMAIL_PROVIDER} needs EMAIL_API_KEY`);
+  if (['brevo', 'resend'].includes(env.EMAIL_PROVIDER) && /example\.com/.test(env.EMAIL_FROM)) problems.push('Set EMAIL_FROM to your verified sender, e.g. "Dragonz Central <you@gmail.com>"');
   if (env.STORAGE_DRIVER === 's3' && !(env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY && env.MEDIA_PUBLIC_URL)) problems.push('STORAGE_DRIVER=s3 needs S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY and MEDIA_PUBLIC_URL');
   if (env.CRON_SECRET && env.CRON_SECRET.length < 24) problems.push('CRON_SECRET must be at least 24 characters');
   if (env.STORAGE_DRIVER === 'local') console.warn('⚠ STORAGE_DRIVER=local in production: uploads are lost on hosts with ephemeral disks (Render free). Use s3.');

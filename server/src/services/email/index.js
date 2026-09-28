@@ -28,6 +28,23 @@ const providers = {
       if (!res.ok) throw new Error(`Resend responded ${res.status}`);
     },
   },
+  // Brevo transactional API over HTTPS — works on hosts that block SMTP ports (e.g. Render's free plan).
+  brevo: {
+    async send({ to, subject, html, text }) {
+      const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(env.EMAIL_FROM);
+      const sender = m ? { name: m[1].trim() || 'Dragonz Central', email: m[2].trim() } : { name: 'Dragonz Central', email: env.EMAIL_FROM.trim() };
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': env.EMAIL_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ sender, to: [{ email: to }], subject, htmlContent: html, textContent: text }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new Error(`Brevo responded ${res.status}${detail.message ? `: ${String(detail.message).slice(0, 200)}` : ''}`);
+      }
+    },
+  },
 };
 
 // SMTP works with Brevo, Gmail (app password), Zoho, Mailgun… — whatever you have for free.
