@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+
+/* ── Design tokens ───────────────────────────────────────────── */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Inter Variable', ui-sans-serif, sans-serif;
+
+  --color-ink-950: #050505;
+  --color-ink-900: #090909;
+  --color-ink-850: #0f0f0e;
+  --color-ink-800: #151513;
+  --color-ink-700: #1f1e1b;
+  --color-ink-600: #2c2a26;
+  --color-ink-500: #3a3a48;
+  --color-ink-400: #6c6c7c;
+  --color-ink-300: #9b9bab;
+  --color-ink-200: #c9c9d4;
+  --color-ink-100: #ececf1;
+
+  /* DRZ gold — primary brand colour */
+  --color-dragon-200: #ffe9a8;
+  --color-dragon-300: #ffdb70;
+  --color-dragon-400: #ffca28;
+  --color-dragon-500: #d9a514;
+  --color-dragon-600: #b0850c;
+  --color-dragon-700: #6e5307;
+
+  /* warm secondary accent */
+  --color-ember-400: #fb923c;
+  --color-ember-500: #f97316;
+
+  --color-live: #ff2d55;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 10px 30px -12px rgb(0 0 0 / 0.6);
+  --shadow-glow: 0 0 0 1px rgb(217 165 20 / 0.35), 0 12px 40px -10px rgb(217 165 20 / 0.45);
+
+  --animate-pulse-live: pulse-live 1.6s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.8); }
+  }
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-spin-slow: spin 60s linear infinite;
+  --animate-spin-slower: spin 110s linear infinite reverse;
+  --animate-marquee: marquee 45s linear infinite;
+  --animate-shimmer: shimmer 6s linear infinite;
+  --animate-ember: ember var(--dur, 9s) linear var(--delay, 0s) infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes shimmer {
+    from { background-position: 0% 50%; }
+    to { background-position: 200% 50%; }
+  }
+  @keyframes ember {
+    0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
+    10% { opacity: var(--o, .8); }
+    100% { transform: translate3d(var(--dx, 20px), -70vh, 0) scale(.3); opacity: 0; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@layer base {
+  html { color-scheme: dark; -webkit-tap-highlight-color: transparent; }
+  body {
+    @apply bg-ink-900 text-ink-200 font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 85% -10%, rgb(217 165 20 / 0.06), transparent 60%);
+    background-attachment: fixed;
+    min-height: 100dvh;
+  }
+  h1, h2, h3, h4 { @apply font-display text-ink-100 tracking-wide; }
+  ::selection { background: rgb(217 165 20 / 0.45); color: white; }
+  :focus-visible { outline: 2px solid var(--color-dragon-400); outline-offset: 2px; border-radius: 6px; }
+  a { @apply transition-colors; }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+  .card {
+    @apply rounded-[var(--radius-card)] border border-ink-700 bg-ink-850/80 shadow-[var(--shadow-card)] backdrop-blur-sm;
+  }
+  .card-hover { @apply transition duration-300 hover:-translate-y-0.5 hover:border-ink-500 hover:bg-ink-800; }
+  .eyebrow { @apply font-display text-xs font-bold uppercase tracking-[0.22em] text-dragon-400; }
+  .input {
+    @apply w-full rounded-xl border border-ink-600 bg-ink-900 px-3.5 py-2.5 text-sm text-ink-100 placeholder:text-ink-400
+      transition focus:border-dragon-500 focus:outline-none focus:ring-2 focus:ring-dragon-500/30 disabled:opacity-60;
+  }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink-200; }
+  /* Subtle dragon-scale pattern used on banners and empty media */
+  .scales {
+    background-image:
+      radial-gradient(circle at 50% 100%, transparent 58%, rgb(255 255 255 / 0.035) 59%, rgb(255 255 255 / 0.035) 64%, transparent 65%);
+    background-size: 28px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

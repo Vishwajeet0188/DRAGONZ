@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.test
+# user-uploaded media (only the storage folders, NOT server/src/modules/uploads which is code)
+/server/uploads/
+/uploads/
+/server/.test-uploads/
+*.log
+.DS_Store
+coverage/

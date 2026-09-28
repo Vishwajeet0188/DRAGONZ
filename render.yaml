@@ -1,0 +1,59 @@
+# Render Blueprint — one free web service serves both the API and the React website.
+# Database: Neon (free Postgres). Images: Supabase Storage (free, S3-compatible).
+# Values marked `sync: false` are asked for when you create the Blueprint; nothing secret lives in git.
+services:
+  - type: web
+    name: dragonz-central
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: STREAMING_MODE
+        value: live
+      - key: SYNC_INTERVAL_SECONDS
+        value: "180"
+      - key: STORAGE_DRIVER
+        value: s3
+      # Emails are printed to the logs until you add Brevo (then change to smtp + add SMTP_* vars)
+      - key: EMAIL_PROVIDER
+        value: console
+      # Generated once by Render
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      # You fill these in
+      - key: APP_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MEDIA_PUBLIC_URL
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false

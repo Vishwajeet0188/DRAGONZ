@@ -1,0 +1,25 @@
+{
+  "name": "dragonz-central",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dragonz Central \u2014 the centralized digital home of Dragonz",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace server & npm run dev --workspace client",
+    "build": "npm run build --workspace client",
+    "test": "npm test --workspace server",
+    "db:migrate": "npm run db:migrate --workspace server",
+    "db:seed": "npm run db:seed --workspace server",
+    "demo:clear": "npm run demo:clear --workspace server",
+    "sync:once": "npm run sync:once --workspace server",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "start": "npm run start:prod --workspace server"
+  }
+}
