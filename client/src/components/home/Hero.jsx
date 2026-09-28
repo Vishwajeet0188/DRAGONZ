@@ -126,17 +126,7 @@ export function Hero({ stats, liveNow, roster }) {
 
       <div className="container-page grid flex-1 items-center gap-4 py-6 sm:gap-6 sm:py-10 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:py-16">
         <div className="order-2 text-center lg:order-1 lg:text-left">
-          {liveCount > 0 ? (
-            <Link to="/live" className="inline-flex animate-fade-up items-center gap-2 rounded-full border border-live/30 bg-live/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-ink-100 transition hover:border-live/60" style={stagger(0)}>
-              <LiveDot /> {liveCount} creator{liveCount === 1 ? '' : 's'} live now <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          ) : (
-            <p className="inline-flex animate-fade-up items-center gap-2 rounded-full border border-dragon-500/30 bg-dragon-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-dragon-300" style={stagger(0)}>
-              DRZ · Dragon Z Creators
-            </p>
-          )}
-
-          <h1 id="hero-title" className="mt-5 font-display text-[clamp(3.25rem,10vw,8.5rem)] font-extrabold uppercase leading-[0.84] tracking-tight">
+          <h1 id="hero-title" className="font-display text-[clamp(3.25rem,10vw,8.5rem)] font-extrabold uppercase leading-[0.84] tracking-tight">
             <span className="block animate-fade-up text-ink-100" style={stagger(1)}>Unleash</span>
             <span className="block animate-fade-up" style={stagger(2)}>
               <span className="inline-block bg-[linear-gradient(90deg,#b0850c,#ffca28,#fff1c2,#ffca28,#b0850c)] bg-[length:200%_auto] bg-clip-text pb-2 text-transparent motion-safe:animate-shimmer">the Dragon</span>
