@@ -6,6 +6,7 @@ import { PERMISSIONS as P } from '../../auth/permissions.js';
 import * as v from './admin.validators.js';
 import * as admin from './admin.service.js';
 import * as integrations from './integrations.service.js';
+import { requestSync } from '../../integrations/index.js';
 import { sensitiveLimiter } from '../../middleware/security.js';
 import { adminUploadsRouter } from '../uploads/uploads.routes.js';
 import { eventsAdminRouter } from '../events/events.routes.js';
@@ -35,7 +36,9 @@ adminRouter.get('/members/:id', canMembers, validate({ params: v.idParam }), asy
   res.json({ data: await admin.getMemberAdmin(req.params.id) });
 });
 adminRouter.post('/members', canMembers, validate({ body: v.memberBody }), async (req, res) => {
-  res.status(201).json({ data: await admin.createMember(req.user, req.body) });
+  const data = await admin.createMember(req.user, req.body);
+  requestSync();
+  res.status(201).json({ data });
 });
 adminRouter.patch('/members/:id', canMembers, validate({ params: v.idParam, body: v.memberPatch }), async (req, res) => {
   res.json({ data: await admin.updateMember(req.user, req.params.id, req.body) });
@@ -45,7 +48,9 @@ adminRouter.delete('/members/:id', canMembers, validate({ params: v.idParam }), 
   res.status(204).end();
 });
 adminRouter.put('/members/:id/platforms', requirePermission(P.MEMBERS_MANAGE, P.CREATORS_MANAGE), validate({ params: v.idParam, body: v.platformsBody }), async (req, res) => {
-  res.json({ data: await admin.setPlatforms(req.user, req.params.id, req.body.platforms) });
+  const data = await admin.setPlatforms(req.user, req.params.id, req.body.platforms);
+  requestSync(); // fetch the new channels' photo, subscribers, videos and live status within seconds
+  res.json({ data });
 });
 
 // Users

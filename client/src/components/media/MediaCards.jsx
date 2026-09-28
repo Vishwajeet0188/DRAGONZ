@@ -31,7 +31,7 @@ export function Thumb({ src, accent = '#d9a514', platform, children, title }) {
   );
 }
 
-export function VideoCard({ video }) {
+export function VideoCard({ video, showFeatured = false }) {
   const m = video.member;
   const meta = PLATFORM_META[video.platform];
   return (
@@ -41,6 +41,9 @@ export function VideoCard({ video }) {
         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
           {meta && <meta.Icon className="h-3 w-3" style={{ color: meta.color }} aria-hidden="true" />} {meta?.label}
         </span>
+        {showFeatured && video.isFeatured && (
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-dragon-400 px-1.5 py-0.5 font-display text-[11px] font-bold uppercase tracking-wider text-ink-950 shadow">★ Featured</span>
+        )}
         <span className="absolute inset-0 grid place-items-center opacity-0 transition group-hover:opacity-100">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-dragon-500/90 shadow-[var(--shadow-glow)]"><Play className="h-5 w-5 translate-x-0.5 fill-white text-white" /></span>
         </span>

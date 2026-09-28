@@ -65,7 +65,8 @@ videosRouter.get('/', validate({ query: videosQuery }), async (req, res) => {
   if (platform) filters.push(eq(videos.platform, platform));
   if (featured) filters.push(eq(videos.isFeatured, true));
   const where = and(...filters);
-  const order = sort === 'popular' ? [desc(videos.viewCount), desc(videos.publishedAt)] : [desc(videos.publishedAt)];
+  // "Latest" (default): admin-starred videos first, then newest. "Most viewed" is purely by views.
+  const order = sort === 'popular' ? [desc(videos.viewCount), desc(videos.publishedAt)] : [desc(videos.isFeatured), desc(videos.publishedAt)];
 
   const [rows, [{ total }]] = await Promise.all([
     db.select({ video: videos, member: memberMini }).from(videos).innerJoin(members, eq(members.id, videos.memberId))

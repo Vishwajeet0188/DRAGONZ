@@ -154,6 +154,10 @@ describe('videos admin', () => {
     const pub = await request(app).get('/api/videos');
     assert.ok(!pub.body.data.some((v) => v.id === synced.id));
     assert.equal((await admin.del(`/api/admin/videos/${synced.id}`)).status, 404);
+    // starred videos come first on the public Videos page ("latest" sort)
+    const [older] = await db.insert(schema.videos).values({ memberId: member.id, platform: 'YOUTUBE', title: 'Old but starred', url: 'https://www.youtube.com/watch?v=OLDSTARRED1', publishedAt: new Date(Date.now() - 30 * 86_400_000), isFeatured: true }).returning();
+    const first = (await request(app).get('/api/videos')).body.data[0];
+    assert.equal(first.id, older.id);
   });
 });
 

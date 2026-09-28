@@ -58,8 +58,8 @@ export default function Videos() {
             <option value="">All platforms</option>
             {VIDEO_PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_META[p].label}</option>)}
           </select>
-          <select className="input md:w-36" value={f.sort} onChange={(e) => update({ sort: e.target.value })} aria-label="Sort">
-            <option value="latest">Latest</option>
+          <select className="input md:w-48" value={f.sort} onChange={(e) => update({ sort: e.target.value })} aria-label="Sort">
+            <option value="latest">Featured &amp; latest</option>
             <option value="popular">Most viewed</option>
           </select>
         </div>
@@ -78,7 +78,7 @@ export default function Videos() {
       ) : (
         <>
           <div className={`grid gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 transition-opacity ${q.isPlaceholderData ? 'opacity-60' : ''}`}>
-            {q.data.data.map((v) => <VideoCard key={v.id} video={v} />)}
+            {q.data.data.map((v) => <VideoCard key={v.id} video={v} showFeatured />)}
           </div>
           <Pagination meta={q.data.meta} onPage={(page) => { update({ page }); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
         </>
