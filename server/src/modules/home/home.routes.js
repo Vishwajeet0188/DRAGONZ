@@ -3,6 +3,10 @@ import { and, asc, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { hydrateMembers, memberCardColumns } from '../members/members.service.js';
 import { listPublic } from '../community/community.service.js';
+import { leaderboard } from '../../services/xp.js';
+import { celebrations } from '../fanzone/fans.js';
+import { homeQuotes } from '../fanzone/quotes.js';
+import { latestWinner } from '../fanzone/clips.js';
 
 const { members, liveStreams, videos, newsPosts, events, achievements, milestones } = schema;
 
@@ -42,6 +46,9 @@ async function getHome() {
     hydrateMembers(roster),
   ]);
 
+  // Fan Zone (public data only — polls include the viewer's vote, so they load separately and uncached).
+  const [topFans, celebrate, quoteWall, clipOfWeek] = await Promise.all([leaderboard(5), celebrations(7), homeQuotes(6), latestWinner()]);
+
   const [counts] = await db.execute(/* sql */ `
     select (select count(*) from members where deleted_at is null and status = 'ACTIVE')::int as members,
            (select count(*) from members where deleted_at is null and status = 'ACTIVE' and is_creator)::int as creators,
@@ -60,6 +67,7 @@ async function getHome() {
     community,
     roster: roster.slice(0, 40),
     crew,
+    fanZone: { topFans, celebrations: celebrate, quotes: quoteWall, clipOfWeek },
   };
 }
 

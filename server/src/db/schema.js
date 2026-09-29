@@ -24,6 +24,11 @@ export const supporterSourceEnum = pgEnum('supporter_source', ['ADMIN', 'SELF_CL
 export const supporterStatusEnum = pgEnum('supporter_status', ['PENDING', 'VERIFIED', 'REVOKED']);
 export const notificationTypeEnum = pgEnum('notification_type', ['LIVE', 'EVENT_REMINDER', 'ANNOUNCEMENT', 'SYSTEM']);
 export const emailStatusEnum = pgEnum('email_status', ['QUEUED', 'SENT', 'FAILED']);
+export const pollStatusEnum = pgEnum('poll_status', ['OPEN', 'CLOSED']);
+export const applicationStatusEnum = pgEnum('application_status', ['PENDING', 'REVIEWING', 'ACCEPTED', 'REJECTED', 'WITHDRAWN']);
+export const socialTargetEnum = pgEnum('social_target', ['NEWS', 'EVENT', 'COMMUNITY', 'QUOTE']);
+export const commentStatusEnum = pgEnum('comment_status', ['VISIBLE', 'HIDDEN']);
+export const quoteStatusEnum = pgEnum('quote_status', ['PENDING', 'APPROVED', 'REJECTED']);
 
 const ts = (name) => timestamp(name, { withTimezone: true, mode: 'date' });
 const id = () => uuid('id').primaryKey().defaultRandom();
@@ -44,6 +49,11 @@ export const users = pgTable('users', {
   failedLoginCount: integer('failed_login_count').notNull().default(0),
   lockedUntil: ts('locked_until'),
   lastLoginAt: ts('last_login_at'),
+  // Fan Zone: running XP total (sum of xp_events), leaderboard opt-out and daily check-in streak.
+  xp: integer('xp').notNull().default(0),
+  showOnLeaderboard: boolean('show_on_leaderboard').notNull().default(true),
+  lastCheckinDay: date('last_checkin_day'),
+  checkinStreak: integer('checkin_streak').notNull().default(0),
   ...timestamps,
   deletedAt: ts('deleted_at'),
 }, (t) => [
@@ -96,6 +106,8 @@ export const members = pgTable('members', {
   isFeatured: boolean('is_featured').notNull().default(false),
   status: memberStatusEnum('status').notNull().default('ACTIVE'),
   joinedAt: ts('joined_at'),
+  birthMonth: integer('birth_month'), // 1–12, optional; year deliberately not stored
+  birthDay: integer('birth_day'),     // 1–31
   userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
   ...timestamps,
   deletedAt: ts('deleted_at'),
@@ -394,6 +406,117 @@ export const siteSettings = pgTable('site_settings', {
   value: jsonb('value').notNull(),
   updatedAt: ts('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
+
+// ───────────────────────────── Fan Zone ─────────────────────────────
+export const polls = pgTable('polls', {
+  id: id(),
+  question: varchar('question', { length: 200 }).notNull(),
+  description: varchar('description', { length: 500 }),
+  status: pollStatusEnum('status').notNull().default('OPEN'),
+  closesAt: ts('closes_at'),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  ...timestamps,
+  deletedAt: ts('deleted_at'),
+}, (t) => [index('polls_status_idx').on(t.status, t.createdAt)]);
+
+export const pollOptions = pgTable('poll_options', {
+  id: id(),
+  pollId: uuid('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  label: varchar('label', { length: 120 }).notNull(),
+  position: integer('position').notNull().default(0),
+}, (t) => [index('poll_options_poll_idx').on(t.pollId)]);
+
+export const pollVotes = pgTable('poll_votes', {
+  pollId: uuid('poll_id').notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  optionId: uuid('option_id').notNull().references(() => pollOptions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.pollId, t.userId] }), index('poll_votes_option_idx').on(t.optionId)]);
+
+/** Every XP grant is a row; (user, reason, refKey) is unique so the same action can never pay twice. */
+export const xpEvents = pgTable('xp_events', {
+  id: id(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reason: varchar('reason', { length: 40 }).notNull(),
+  refKey: varchar('ref_key', { length: 120 }).notNull().default(''),
+  points: integer('points').notNull(),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [uniqueIndex('xp_events_once').on(t.userId, t.reason, t.refKey), index('xp_events_user_idx').on(t.userId, t.createdAt)]);
+
+export const userBadges = pgTable('user_badges', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  badge: varchar('badge', { length: 40 }).notNull(),
+  awardedAt: ts('awarded_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.badge] })]);
+
+export const crewApplications = pgTable('crew_applications', {
+  id: id(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rpName: varchar('rp_name', { length: 80 }).notNull(),
+  discordTag: varchar('discord_tag', { length: 60 }).notNull(),
+  ageConfirmed: boolean('age_confirmed').notNull().default(false), // "I am 18 or older" — no birth date collected
+  experience: varchar('experience', { length: 2000 }).notNull(),
+  whyDrz: varchar('why_drz', { length: 2000 }).notNull(),
+  availability: varchar('availability', { length: 200 }),
+  clipUrl: text('clip_url'),
+  status: applicationStatusEnum('status').notNull().default('PENDING'),
+  messageToApplicant: varchar('message_to_applicant', { length: 500 }),
+  internalNote: varchar('internal_note', { length: 1000 }),
+  reviewedById: uuid('reviewed_by_id').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: ts('reviewed_at'),
+  ...timestamps,
+}, (t) => [index('crew_applications_status_idx').on(t.status, t.createdAt), index('crew_applications_user_idx').on(t.userId)]);
+
+export const reactions = pgTable('reactions', {
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetType: socialTargetEnum('target_type').notNull(),
+  targetId: uuid('target_id').notNull(),
+  emoji: varchar('emoji', { length: 12 }).notNull(),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.userId, t.targetType, t.targetId, t.emoji] }), index('reactions_target_idx').on(t.targetType, t.targetId)]);
+
+export const comments = pgTable('comments', {
+  id: id(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetType: socialTargetEnum('target_type').notNull(),
+  targetId: uuid('target_id').notNull(),
+  body: varchar('body', { length: 500 }).notNull(),
+  status: commentStatusEnum('status').notNull().default('VISIBLE'),
+  ...timestamps,
+  deletedAt: ts('deleted_at'),
+}, (t) => [index('comments_target_idx').on(t.targetType, t.targetId, t.createdAt), index('comments_created_idx').on(t.createdAt)]);
+
+/** One vote per user per week (weekKey like "2026-W40", India time). */
+export const clipVotes = pgTable('clip_votes', {
+  weekKey: varchar('week_key', { length: 10 }).notNull(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  submissionId: uuid('submission_id').notNull().references(() => communitySubmissions.id, { onDelete: 'cascade' }),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.weekKey, t.userId] }), index('clip_votes_week_sub_idx').on(t.weekKey, t.submissionId)]);
+
+export const clipWinners = pgTable('clip_winners', {
+  weekKey: varchar('week_key', { length: 10 }).primaryKey(),
+  submissionId: uuid('submission_id').notNull().references(() => communitySubmissions.id, { onDelete: 'cascade' }),
+  votes: integer('votes').notNull(),
+  decidedAt: ts('decided_at').notNull().defaultNow(),
+});
+
+export const quotes = pgTable('quotes', {
+  id: id(),
+  text: varchar('text', { length: 280 }).notNull(),
+  memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
+  characterName: varchar('character_name', { length: 80 }),
+  context: varchar('context', { length: 140 }),
+  submittedById: uuid('submitted_by_id').references(() => users.id, { onDelete: 'set null' }),
+  status: quoteStatusEnum('status').notNull().default('PENDING'),
+  isFeatured: boolean('is_featured').notNull().default(false),
+  moderatedById: uuid('moderated_by_id').references(() => users.id, { onDelete: 'set null' }),
+  moderatedAt: ts('moderated_at'),
+  ...timestamps,
+  deletedAt: ts('deleted_at'),
+}, (t) => [index('quotes_status_idx').on(t.status, t.createdAt)]);
 
 // ───────────────────────────── Relations (for relational queries) ─────────────────────────────
 export const usersRelations = relations(users, ({ many, one }) => ({

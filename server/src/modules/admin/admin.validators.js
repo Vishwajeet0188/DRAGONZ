@@ -20,9 +20,13 @@ export const memberBody = z.object({
   isFeatured: z.boolean().default(false),
   status: z.enum(['ACTIVE', 'INACTIVE', 'ALUMNI']).default('ACTIVE'),
   joinedAt: z.coerce.date().nullable().optional(),
-}).strict();
+  // Birthday without a year (privacy). Both or neither; empty string clears.
+  birthMonth: z.coerce.number().int().min(1).max(12).nullable().optional().or(z.literal('').transform(() => null)),
+  birthDay: z.coerce.number().int().min(1).max(31).nullable().optional().or(z.literal('').transform(() => null)),
+}).strict().refine((b) => (b.birthMonth == null) === (b.birthDay == null), { message: 'Set both month and day, or neither', path: ['birthDay'] })
+  .refine((b) => !b.birthMonth || !b.birthDay || b.birthDay <= [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][b.birthMonth - 1], { message: 'That day does not exist in this month', path: ['birthDay'] });
 
-export const memberPatch = memberBody.partial().strict();
+export const memberPatch = memberBody.innerType().innerType().partial().strict();
 
 export const platformsBody = z.object({
   platforms: z.array(z.object({

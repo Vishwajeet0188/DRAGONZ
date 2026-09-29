@@ -29,6 +29,13 @@
       "when": 1790592213617,
       "tag": "0003_video_deleted",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790688985481,
+      "tag": "0004_fan_zone",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Heart, KeyRound, ShieldCheck, Trash2, User } from 'lucide-react';
+import { Bell, Heart, KeyRound, ShieldCheck, Trash2, Trophy, User } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { usePageTitle } from '../lib/usePageTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -222,6 +222,29 @@ function DeleteAccount() {
   );
 }
 
+function FanPrefs() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['my-progress'], queryFn: () => api.get('/me/progress').then((r) => r.data) });
+  const [err, setErr] = useState('');
+  const save = async (v) => {
+    setErr('');
+    qc.setQueryData(['my-progress'], (old) => old && { ...old, showOnLeaderboard: v });
+    try { await api.patch('/users/me', { showOnLeaderboard: v }); } catch (e) { setErr(e.message); }
+    qc.invalidateQueries({ queryKey: ['my-progress'] });
+    qc.invalidateQueries({ queryKey: ['leaderboard'] });
+    qc.invalidateQueries({ queryKey: ['home'] });
+  };
+  if (q.isPending) return <p className="text-sm text-ink-400">Loading…</p>;
+  if (q.isError) return <FormAlert tone="error">{q.error.message}</FormAlert>;
+  return (
+    <div>
+      {err && <FormAlert tone="error">{err}</FormAlert>}
+      <Toggle label="Show me on the Top Fans leaderboard" desc="Only your display name, avatar, level and badges are shown. You keep earning XP either way."
+        checked={q.data.showOnLeaderboard} onChange={save} />
+    </div>
+  );
+}
+
 export default function Settings() {
   usePageTitle('Settings');
   const { user } = useAuth();
@@ -234,6 +257,7 @@ export default function Settings() {
         <Card id="notifications" icon={Bell} title="Notifications" desc="Choose how you hear about live streams, events and announcements.">
           <NotificationPrefs />
         </Card>
+        <Card id="fan-zone" icon={Trophy} title="Fan Zone" desc="Your XP, level and badges."><FanPrefs /></Card>
         <Card id="supporters" icon={Heart} title="Supporter badges" desc="Badges you’ve claimed on creators’ profiles."><MySupporterBadges /></Card>
         <Card id="password" icon={KeyRound} title="Password"><PasswordForm /></Card>
         <Card id="sessions" icon={ShieldCheck} title="Sessions" desc={`Signed in as ${user.email}`}><Sessions /></Card>

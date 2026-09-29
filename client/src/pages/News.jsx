@@ -1,3 +1,4 @@
+import { Discussion } from '../components/fanzone/FanZone.jsx';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Newspaper, Pin } from 'lucide-react';
@@ -100,6 +101,7 @@ export function NewsPost() {
         <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-5xl">{p.title}</h1>
         {p.excerpt && <p className="mt-4 text-lg text-ink-300">{p.excerpt}</p>}
         <div className="mt-8 border-t border-ink-700 pt-4"><Markdown>{p.content}</Markdown></div>
+        <Discussion type="news" id={p.id} />
       </div>
       {p.more.length > 0 && (
         <section className="container-page mt-16" aria-labelledby="more-h">

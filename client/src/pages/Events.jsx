@@ -1,3 +1,4 @@
+import { Discussion } from '../components/fanzone/FanZone.jsx';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -133,6 +134,7 @@ export function EventDetail() {
           <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-6xl">{e.title}</h1>
           <p className="mt-3 flex items-center gap-2 text-ink-300"><Clock className="h-4 w-4 text-dragon-400" /> {formatDateTime(e.startsAt)}{e.endsAt ? ` – ${formatDateTime(e.endsAt)}` : ''}</p>
           <div className="mt-8 whitespace-pre-line leading-relaxed text-ink-200">{e.description}</div>
+          <Discussion type="event" id={e.id} />
         </div>
 
         <aside className="space-y-4 lg:mt-24">

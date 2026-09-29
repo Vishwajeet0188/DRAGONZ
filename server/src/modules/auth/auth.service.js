@@ -5,6 +5,7 @@ import { AppError, badRequest, conflict, tooMany, unauthorized } from '../../lib
 import { queueEmail } from '../../services/email/index.js';
 import { audit } from '../../services/audit.js';
 import { logger } from '../../lib/logger.js';
+import { awardXp } from '../../services/xp.js';
 
 const { users, authTokens, sessions, notificationPreferences } = schema;
 
@@ -100,6 +101,7 @@ export async function login({ email, password }) {
 export async function verifyEmail(token) {
   const userId = await consumeToken(token, 'EMAIL_VERIFY');
   await db.update(users).set({ emailVerifiedAt: new Date() }).where(and(eq(users.id, userId), isNull(users.emailVerifiedAt)));
+  await awardXp(userId, 'VERIFY_EMAIL');
 }
 
 export async function forgotPassword(email) {

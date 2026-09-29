@@ -16,6 +16,10 @@ import { videosAdminRouter } from '../media/media.routes.js';
 import { achievementsAdminRouter } from '../achievements/achievements.routes.js';
 import { supportersAdminRouter } from '../supporters/supporters.routes.js';
 import { platformAdminRouter } from './platform.routes.js';
+import { pollsAdminRouter } from '../fanzone/polls.js';
+import { applicationsAdminRouter } from '../fanzone/recruitment.js';
+import { quotesAdminRouter } from '../fanzone/quotes.js';
+import { commentsAdminRouter } from '../fanzone/social.js';
 
 export const adminRouter = Router();
 
@@ -87,3 +91,7 @@ adminRouter.use('/videos', videosAdminRouter);
 adminRouter.use('/supporters', supportersAdminRouter);
 adminRouter.use(achievementsAdminRouter); // /achievements, /milestones
 adminRouter.use(platformAdminRouter); // /announcements, /analytics, /settings
+adminRouter.use('/polls', pollsAdminRouter);
+adminRouter.use('/applications', applicationsAdminRouter);
+adminRouter.use('/quotes', quotesAdminRouter);
+adminRouter.use('/comments', commentsAdminRouter);

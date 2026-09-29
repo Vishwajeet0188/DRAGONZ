@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Heart, Mail, Settings as SettingsIcon, Users } from 'lucide-react';
+import { Bell, Flame, Heart, Mail, Settings as SettingsIcon, Swords, Users } from 'lucide-react';
+import { ProgressCard } from '../components/fanzone/FanZone.jsx';
 import { api } from '../lib/api.js';
 import { formatDateTime, safeUrl, timeAgo } from '../lib/format.js';
 import { usePageTitle } from '../lib/usePageTitle.js';
@@ -109,6 +110,20 @@ function Panel({ title, icon: Icon, to, children }) {
   );
 }
 
+const APP_LABEL = { PENDING: 'Received', REVIEWING: 'In review', ACCEPTED: 'Accepted 🎉', REJECTED: 'Not this time' };
+function ApplicationStatus() {
+  const q = useQuery({ queryKey: ['my-application'], queryFn: () => api.get('/me/application').then((r) => r.data) });
+  const app = q.data?.application;
+  if (!app || app.status === 'WITHDRAWN') return null;
+  return (
+    <Link to="/join" className="card card-hover flex items-center gap-3 p-4">
+      <Swords className="h-5 w-5 text-dragon-400" aria-hidden="true" />
+      <div className="min-w-0 flex-1"><p className="text-xs text-ink-400">Crew application</p><p className="font-semibold text-ink-100">{APP_LABEL[app.status]}</p></div>
+      <span className="text-xs text-ink-400">View</span>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   usePageTitle('Dashboard');
   const { user } = useAuth();
@@ -149,6 +164,10 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-6">
+            <Panel title="Fan level" icon={Flame} to="/fan-zone">
+              <ProgressCard />
+            </Panel>
+            <ApplicationStatus />
             <Panel title="Notifications" icon={Bell}>
               <Notifications />
             </Panel>

@@ -9,6 +9,7 @@ import { requireAuth } from '../../middleware/session.js';
 import { notFound } from '../../lib/errors.js';
 import { randomToken } from '../../lib/crypto.js';
 import { hydrateMembers, memberCardColumns } from '../members/members.service.js';
+import { awardXp } from '../../services/xp.js';
 
 const { follows, members, notifications, notificationPreferences } = schema;
 const slugParam = z.object({ slug: z.string().regex(/^[a-z0-9-]{1,80}$/) });
@@ -28,6 +29,7 @@ followRouter.put('/', validate({ params: slugParam, body: z.object({ notifyLive:
   const m = await memberBySlug(req.params.slug);
   await db.insert(follows).values({ userId: req.user.id, memberId: m.id, notifyLive: req.body.notifyLive })
     .onConflictDoUpdate({ target: [follows.userId, follows.memberId], set: { notifyLive: req.body.notifyLive } });
+  await awardXp(req.user.id, 'FOLLOW', m.id); // once per creator, ever
   res.json({ data: { following: true, notifyLive: req.body.notifyLive } });
 });
 

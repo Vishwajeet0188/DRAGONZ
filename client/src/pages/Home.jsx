@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ArrowRight, CalendarDays, Clock, Camera, Clapperboard, Film, Megaphone, Palette, Pin, Sparkles, Trophy, Upload, Users, Image as ImageIcon, TrendingUp } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock, Camera, Clapperboard, PartyPopper, Swords, Film, Megaphone, Palette, Pin, Sparkles, Trophy, Upload, Users, Image as ImageIcon, TrendingUp } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { compact, formatDate, formatDateTime, safeUrl, timeAgo, titleCase } from '../lib/format.js';
 import { PLATFORM_META } from '../lib/platforms.js';
@@ -14,6 +14,8 @@ import { Badge, LiveDot, SectionHeader } from '../components/ui/Bits.jsx';
 import { ErrorState, Skeleton } from '../components/ui/States.jsx';
 import { MemberCard } from '../components/members/MemberCard.jsx';
 import { LiveCard, VideoCard } from '../components/media/MediaCards.jsx';
+import { Celebrations, Leaderboard, PollCard, QuoteCard } from '../components/fanzone/FanZone.jsx';
+import { useSiteSettings } from '../lib/site.js';
 
 function Section({ children, className = '' }) {
   return <section className={`container-page py-10 sm:py-14 ${className}`}>{children}</section>;
@@ -215,6 +217,57 @@ function Milestones({ items }) {
   );
 }
 
+/** Fan Zone on the home page: featured poll, top fans, crew celebrations, clip of the week and the quote wall. */
+function FanZoneSection({ fz }) {
+  const poll = useQuery({ queryKey: ['polls', 'featured'], queryFn: () => api.get('/polls/featured').then((r) => r.data) });
+  const clip = fz?.clipOfWeek;
+  const quotes = fz?.quotes ?? [];
+  return (
+    <Section>
+      <SectionHeader eyebrow="Vote · level up · celebrate" title="Fan Zone" to="/fan-zone" linkLabel="Enter the Fan Zone" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        {poll.data ? <PollCard poll={poll.data} /> : (
+          <Link to="/clip-of-the-week" className="card card-hover group relative flex flex-col overflow-hidden">
+            {clip && safeUrl(clip.submission.previewUrl) ? <img src={clip.submission.previewUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="aspect-video w-full object-cover" />
+              : <div className="scales grid aspect-video place-items-center bg-ink-800" aria-hidden="true"><Clapperboard className="h-8 w-8 text-dragon-400/70" /></div>}
+            <div className="p-5">
+              <p className="eyebrow mb-1">{clip ? `Clip of the Week · ${clip.weekKey}` : 'Clip of the Week'}</p>
+              <p className="font-display text-2xl font-bold leading-tight">{clip ? clip.submission.title : 'Vote for this week’s best clip'}</p>
+              <p className="mt-1 text-sm text-ink-400">{clip ? `by ${clip.submission.authorName}` : 'One vote per week — winners get featured.'}</p>
+            </div>
+          </Link>
+        )}
+        <div className="card p-5">
+          <div className="mb-3 flex items-center justify-between"><h3 className="flex items-center gap-2 text-xl font-bold"><Trophy className="h-4 w-4 text-dragon-400" aria-hidden="true" /> Top fans</h3><Link to="/fan-zone" className="text-xs font-semibold text-ink-400 hover:text-white">Leaderboard</Link></div>
+          <Leaderboard rows={fz?.topFans} compact />
+        </div>
+        <div className="card p-5">
+          {fz?.celebrations?.length ? (
+            <>
+              <h3 className="mb-3 flex items-center gap-2 text-xl font-bold"><PartyPopper className="h-4 w-4 text-ember-400" aria-hidden="true" /> Celebrations</h3>
+              <Celebrations items={fz.celebrations.slice(0, 4)} />
+            </>
+          ) : (
+            <>
+              <h3 className="mb-3 flex items-center gap-2 text-xl font-bold"><Clapperboard className="h-4 w-4 text-dragon-400" aria-hidden="true" /> Clip of the Week</h3>
+              <p className="text-sm text-ink-400">{clip ? <>Last winner: <span className="font-semibold text-ink-100">{clip.submission.title}</span> by {clip.submission.authorName}.</> : 'Every approved community clip is in the running. Vote once a week — you can change your pick.'}</p>
+              <Button to="/clip-of-the-week" size="sm" className="mt-4">Vote now</Button>
+            </>
+          )}
+        </div>
+      </div>
+      {quotes.length > 0 && (
+        <div className="mt-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            {quotes.slice(0, 3).map((q) => <QuoteCard key={q.id} quote={q} />)}
+          </div>
+          <div className="mt-3 text-right"><Link to="/quotes" className="group inline-flex items-center gap-1 text-sm font-semibold text-ink-300 hover:text-white">Quote Wall <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true" /></Link></div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
 const mosaic = (n) => {
   if (n >= 5) return { big: true, grid: 'grid auto-rows-[160px] grid-cols-2 gap-3 md:grid-cols-4 lg:auto-rows-[190px]' };
   if (n === 1) return { big: false, grid: 'grid auto-rows-[260px] grid-cols-1 gap-3 sm:auto-rows-[360px]' };
@@ -287,6 +340,7 @@ function HomeSkeleton() {
 
 export default function Home() {
   usePageTitle(null);
+  const { recruitmentOpen } = useSiteSettings();
   // Refresh every minute so live status stays current without reloading.
   const q = useQuery({ queryKey: ['home'], queryFn: () => api.get('/home').then((r) => r.data), refetchInterval: 60_000 });
 
@@ -338,16 +392,18 @@ export default function Home() {
       <Achievements items={d.achievements} />
       <Milestones items={d.milestones} />
       <Community items={d.community} />
+      <FanZoneSection fz={d.fanZone} />
 
       <Section>
         <div className="card relative overflow-hidden px-6 py-12 text-center sm:px-12">
           <div className="absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,rgb(217_165_20/.25),transparent)]" aria-hidden="true" />
           <div className="relative">
             <Sparkles className="mx-auto h-6 w-6 text-ember-400" aria-hidden="true" />
-            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Never miss a Dragonz stream</h2>
-            <p className="mx-auto mt-3 max-w-xl text-ink-300">Create a free account to follow your favourite creators. Live alerts are rolling out next.</p>
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">{recruitmentOpen ? 'The Dragonz are recruiting' : 'Never miss a Dragonz stream'}</h2>
+            <p className="mx-auto mt-3 max-w-xl text-ink-300">{recruitmentOpen ? 'Think you’ve got what it takes to run with the crew? Applications are open now.' : 'Create a free account to follow your favourite creators, earn XP in the Fan Zone and get live alerts.'}</p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button to="/register" size="lg"><Users className="h-4 w-4" /> Create account</Button>
+              {recruitmentOpen && <Button to="/join" size="lg"><Swords className="h-4 w-4" /> Apply to join</Button>}
+              <Button to="/register" size="lg" variant={recruitmentOpen ? 'secondary' : 'primary'}><Users className="h-4 w-4" /> Create account</Button>
               <Button to="/about" size="lg" variant="ghost"><Megaphone className="h-4 w-4" /> About the Dragonz</Button>
             </div>
           </div>

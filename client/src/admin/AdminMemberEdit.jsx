@@ -12,7 +12,7 @@ import { AdminHeader } from './ui.jsx';
 
 const EMPTY = {
   displayName: '', slug: '', rank: 'Soldier', rankOrder: 5, rpCharacter: '', tagline: '', bio: '', avatarUrl: '', bannerUrl: '',
-  accentColor: '#d9a514', isCreator: false, isFeatured: false, status: 'ACTIVE', joinedAt: '',
+  accentColor: '#d9a514', isCreator: false, isFeatured: false, status: 'ACTIVE', joinedAt: '', birthMonth: '', birthDay: '',
 };
 
 const toForm = (m) => ({
@@ -22,7 +22,8 @@ const toForm = (m) => ({
 });
 
 function toPayload(f, isNew) {
-  const out = { ...f, rankOrder: Number(f.rankOrder), joinedAt: f.joinedAt ? new Date(f.joinedAt).toISOString() : null };
+  const out = { ...f, rankOrder: Number(f.rankOrder), joinedAt: f.joinedAt ? new Date(f.joinedAt).toISOString() : null,
+    birthMonth: f.birthMonth ? Number(f.birthMonth) : null, birthDay: f.birthDay ? Number(f.birthDay) : null };
   if (!out.slug) delete out.slug; // server generates one for new members; unchanged for edits
   for (const k of ['rpCharacter', 'tagline', 'bio', 'avatarUrl', 'bannerUrl', 'accentColor']) if (out[k] === '') out[k] = null;
   return out;
@@ -179,7 +180,14 @@ export default function AdminMemberEdit() {
               <Field label="Dragonz role *" {...bind('rank')} maxLength={40} hint="e.g. Boss, Underboss, Enforcer" />
               <Field label="Role order" type="number" min="0" max="1000" {...bind('rankOrder')} hint="Lower = more senior (sorting)" />
               <Field label="RP character" {...bind('rpCharacter')} maxLength={80} />
-              <Field label="Joined Dragonz" type="date" {...bind('joinedAt')} />
+              <Field label="Joined Dragonz" type="date" {...bind('joinedAt')} hint="Used for anniversary shout-outs" />
+              <div className="grid grid-cols-2 gap-2">
+                <Field as="select" label="Birthday month" {...bind('birthMonth')}>
+                  <option value="">—</option>
+                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </Field>
+                <Field label="Day" type="number" min="1" max="31" {...bind('birthDay')} hint="No year stored" />
+              </div>
             </div>
             <Field label="Tagline" {...bind('tagline')} maxLength={140} />
             <Field as="textarea" label="Biography" {...bind('bio')} maxLength={5000} rows={5} />

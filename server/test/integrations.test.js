@@ -222,6 +222,7 @@ describe('follows + live alerts', () => {
     const stream = { memberId: m.id, platform: 'KICK', title: 'Going live', url: 'https://kick.com/x', startedAt: new Date(), thumbnailUrl: null };
     await notifyStreamStarted(stream);
     await notifyStreamStarted({ ...stream }); // stream restart in same window → no duplicate
+    await db.delete(schema.notifications).where(sql`${schema.notifications.dedupeKey} like 'badge:%'`); // badge notices from the follow XP
     const inbox = await agent.get('/api/me/notifications');
     assert.equal(inbox.body.data.length, 1);
     assert.match(inbox.body.data[0].title, /Sync Test is LIVE on Kick/);

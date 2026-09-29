@@ -54,3 +54,4 @@ export const sensitiveLimiter = make(15 * 60_000, 10);
 export const uploadLimiter = make(60 * 60_000, 30, 'Too many uploads. Please wait a while.');
 export const submitLimiter = make(60 * 60_000, 10, 'Too many submissions. Please try again later.');
 export const beaconLimiter = make(60_000, 120);
+export const socialLimiter = make(60_000, 40, 'Slow down a little — too many reactions or comments.');

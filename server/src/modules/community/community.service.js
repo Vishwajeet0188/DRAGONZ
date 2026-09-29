@@ -5,6 +5,7 @@ import { pageMeta, paginate } from '../../lib/util.js';
 import { processImage } from '../../lib/images.js';
 import { storage } from '../../services/storage.js';
 import { audit } from '../../services/audit.js';
+import { awardXp } from '../../services/xp.js';
 
 const { communitySubmissions: subs, communityMedia: media, members, users, notifications } = schema;
 const PUBLIC = ['APPROVED', 'FEATURED'];
@@ -32,7 +33,7 @@ export function youtubeId(url) {
   return null;
 }
 
-async function attachMedia(rows) {
+export async function attachMedia(rows) {
   if (!rows.length) return [];
   const m = await db.select().from(media).where(inArray(media.submissionId, rows.map((r) => r.id))).orderBy(media.createdAt);
   const by = Map.groupBy(m, (x) => x.submissionId);
@@ -150,6 +151,7 @@ export async function moderate(actor, id, { status, rejectionReason }) {
     body: status === 'REJECTED' ? updated.rejectionReason : null, url: '/community', dedupeKey: `sub:${id}:${status}`,
   }).onConflictDoNothing();
   await audit(actor.id, `community.${status.toLowerCase()}`, 'submission', id, { title: row.title });
+  if (status === 'APPROVED' || status === 'FEATURED') await awardXp(row.authorId, 'SHOWCASE_APPROVED', id);
   return updated;
 }
 

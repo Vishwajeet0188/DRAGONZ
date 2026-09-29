@@ -21,6 +21,7 @@ usersRouter.use(requireAuth);
 const updateMeSchema = z.object({
   displayName: displayName.optional(),
   avatarUrl: mediaUrl.nullable().optional(),
+  showOnLeaderboard: z.boolean().optional(),
 }).strict();
 
 // All /me routes act on req.user.id only — there is no user id parameter to tamper with (IDOR-safe).

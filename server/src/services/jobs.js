@@ -9,8 +9,9 @@ import { pool } from '../db/index.js';
 import { processOutbox } from './email/index.js';
 import { runLockedSync, liveMode } from '../integrations/index.js';
 import { sendDueEventReminders } from '../modules/events/events.service.js';
+import { decideClipWinners } from '../modules/fanzone/clips.js';
 
-const last = { sync: 0, email: 0, reminders: 0, cleanup: 0 };
+const last = { sync: 0, email: 0, reminders: 0, clips: 0, cleanup: 0 };
 let running = null;
 
 async function runJob(name, everyMs, fn, force) {
@@ -32,6 +33,7 @@ export function tick({ force = false } = {}) {
       : 'off (STREAMING_MODE=mock)',
     email: await runJob('email', 30_000, async () => `${await processOutbox()} sent/retried`, force),
     reminders: await runJob('reminders', 60_000, async () => `${await sendDueEventReminders()} reminders`, force),
+    clips: await runJob('clips', 3_600_000, async () => `${await decideClipWinners()} winners decided`, force),
     cleanup: await runJob('cleanup', 3_600_000, async () => {
       await pool.query('delete from sessions where expires_at < now()');
       await pool.query("delete from auth_tokens where expires_at < now() - interval '7 days'");

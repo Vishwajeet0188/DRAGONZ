@@ -1,3 +1,4 @@
+import { Discussion } from '../components/fanzone/FanZone.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -56,6 +57,7 @@ function Lightbox({ item, onClose }) {
           <p className="text-sm text-ink-400">by {item.authorName}{item.memberName ? <> · featuring <Link to={`/members/${item.memberSlug}`} className="text-dragon-300 hover:text-white">{item.memberName}</Link></> : ''}</p>
           {item.description && <p className="mt-3 whitespace-pre-line text-ink-200">{item.description}</p>}
           {link && <Button className="mt-4" href={link}><ExternalLink className="h-4 w-4" /> Open clip</Button>}
+          <Discussion type="community" id={item.id} />
         </div>
       </div>
     </div>

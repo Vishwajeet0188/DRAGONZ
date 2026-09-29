@@ -27,6 +27,10 @@ const ResetPassword = lazy(() => import('./pages/auth/ResetPassword.jsx'));
 const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
 const Settings = lazy(() => import('./pages/Settings.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
+const FanZoneHub = lazy(() => import('./pages/FanZone.jsx').then((m) => ({ default: m.FanZoneHub })));
+const QuotesPage = lazy(() => import('./pages/FanZone.jsx').then((m) => ({ default: m.QuotesPage })));
+const ClipOfTheWeek = lazy(() => import('./pages/FanZone.jsx').then((m) => ({ default: m.ClipOfTheWeek })));
+const JoinCrew = lazy(() => import('./pages/FanZone.jsx').then((m) => ({ default: m.JoinCrew })));
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'));
 
 function ScrollToTop() {
@@ -77,6 +81,12 @@ export default function App() {
             <Route path="videos" element={<Videos />} />
             <Route path="community" element={<Community />} />
             <Route path="hall-of-fame" element={<HallOfFame />} />
+            <Route path="fan-zone" element={<FanZoneHub />} />
+            <Route path="polls" element={<Navigate to="/fan-zone" replace />} />
+            <Route path="leaderboard" element={<Navigate to="/fan-zone" replace />} />
+            <Route path="quotes" element={<QuotesPage />} />
+            <Route path="clip-of-the-week" element={<ClipOfTheWeek />} />
+            <Route path="join" element={<JoinCrew />} />
             <Route path="news" element={<NewsList />} />
             <Route path="news/:slug" element={<NewsPost />} />
             <Route path="events" element={<EventsList />} />

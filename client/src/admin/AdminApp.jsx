@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import {
   ArrowLeft, BarChart3, Bell, Calendar, Image as ImageIcon, LayoutDashboard, Menu, Newspaper, Radio, ScrollText, Settings,
-  Heart, Sparkles, Trophy, UserCog, Users, Video, X,
+  Heart, MessageCircle, Quote, Sparkles, Swords, Trophy, UserCog, Users, Video, Vote, X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Logo } from '../components/ui/Logo.jsx';
@@ -16,6 +16,7 @@ import AdminIntegrations from './AdminIntegrations.jsx';
 import AdminSoon from './AdminSoon.jsx';
 import { AdminEventEdit, AdminEventsList, AdminNewsEdit, AdminNewsList } from './AdminContent.jsx';
 import { AdminCommunity, AdminHallOfFame, AdminSupporters, AdminVideos } from './AdminModeration.jsx';
+import { AdminApplications, AdminComments, AdminPolls, AdminQuotes } from './AdminFanZone.jsx';
 import { AdminAnalytics, AdminNotifications, AdminSettings } from './AdminPlatform.jsx';
 
 // `perm` hides items the user can't use. The API enforces the same permissions server-side.
@@ -28,6 +29,10 @@ const NAV = [
   { to: '/admin/news', label: 'News', icon: Newspaper, perm: 'news:manage' },
   { to: '/admin/events', label: 'Events', icon: Calendar, perm: 'events:manage' },
   { to: '/admin/community', label: 'Community', icon: ImageIcon, perm: 'community:moderate' },
+  { to: '/admin/comments', label: 'Comments', icon: MessageCircle, perm: 'community:moderate' },
+  { to: '/admin/polls', label: 'Polls', icon: Vote, perm: 'fanzone:manage' },
+  { to: '/admin/quotes', label: 'Quote Wall', icon: Quote, perm: 'community:moderate' },
+  { to: '/admin/applications', label: 'Applications', icon: Swords, perm: 'recruitment:manage' },
   { to: '/admin/achievements', label: 'Hall of Fame', icon: Trophy, perm: 'achievements:manage' },
   { to: '/admin/supporters', label: 'Supporters', icon: Heart, perm: 'supporters:manage' },
   { to: '/admin/users', label: 'Users', icon: UserCog, perm: 'users:read' },
@@ -111,6 +116,10 @@ export default function AdminApp() {
           <Route path="events/new" element={<AdminEventEdit />} />
           <Route path="events/:id" element={<AdminEventEdit />} />
           <Route path="community" element={<AdminCommunity />} />
+          <Route path="polls" element={<AdminPolls />} />
+          <Route path="quotes" element={<AdminQuotes />} />
+          <Route path="comments" element={<AdminComments />} />
+          <Route path="applications" element={<AdminApplications />} />
           <Route path="achievements" element={<AdminHallOfFame />} />
           <Route path="supporters" element={<AdminSupporters />} />
           <Route path="notifications" element={<AdminNotifications />} />

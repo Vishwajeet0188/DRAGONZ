@@ -74,6 +74,21 @@ ${streamUrl ? `<p>Watch live: <a href="${esc(streamUrl)}" style="color:#d9a514">
       footer: `You get DRZ announcements because you opted in. <a href="${esc(env.APP_URL)}/settings#notifications" style="color:#d9a514">Unsubscribe or change settings</a>.`,
     }),
   }),
+  applicationUpdate: ({ displayName, status, message }) => {
+    const lines = {
+      REVIEWING: ['Your application is being reviewed', 'The crew is looking at your application right now. Hang tight!'],
+      ACCEPTED: ['Welcome to the Dragonz 🐉', 'Your application was accepted. The crew will reach out on Discord with next steps.'],
+      REJECTED: ['About your Dragonz application', 'Thanks for applying. This time it was not a match — you can apply again in 30 days.'],
+    }[status] ?? ['Application update', 'There is an update on your application.'];
+    return {
+      subject: lines[0],
+      ...layout({
+        preheader: lines[1], heading: `${lines[0]}`,
+        body: `<p>Hi ${esc(displayName)},</p><p>${esc(lines[1])}</p>${message ? `<p style="border-left:3px solid #d9a514;padding-left:12px;color:#e7e7ea">${esc(message)}</p>` : ''}`,
+        cta: { label: 'View your application', url: `${env.APP_URL}/join` },
+      }),
+    };
+  },
   passwordChanged: ({ displayName }) => ({
     subject: 'Your Dragonz Central password was changed',
     ...layout({

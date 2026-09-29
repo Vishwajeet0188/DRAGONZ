@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { SearchPalette } from '../search/Search.jsx';
 import { useSiteSettings } from '../../lib/site.js';
 import { safeUrl } from '../../lib/format.js';
+import { CheckInToast } from '../fanzone/FanZone.jsx';
 
 const NAV = [
   { to: '/members', label: 'Members' },
@@ -17,6 +18,7 @@ const NAV = [
   { to: '/events', label: 'Events' },
   { to: '/news', label: 'News' },
   { to: '/community', label: 'Community' },
+  { to: '/fan-zone', label: 'Fan Zone' },
   { to: '/hall-of-fame', label: 'Hall of Fame' },
 ];
 
@@ -138,7 +140,7 @@ function Footer() {
   const { discordUrl } = useSiteSettings();
   const cols = [
     ['Explore', [['/members', 'Members'], ['/live', 'Live now'], ['/videos', 'Videos'], ['/hall-of-fame', 'Hall of Fame']]],
-    ['Community', [['/events', 'Events'], ['/news', 'News'], ['/community', 'Showcase'], ['/about', 'About Dragonz']]],
+    ['Community', [['/events', 'Events'], ['/news', 'News'], ['/community', 'Showcase'], ['/fan-zone', 'Fan Zone'], ['/clip-of-the-week', 'Clip of the Week'], ['/quotes', 'Quote Wall'], ['/join', 'Join the crew'], ['/about', 'About Dragonz']]],
     ['Account', [['/register', 'Create account'], ['/login', 'Sign in'], ['/dashboard', 'Dashboard'], ['/settings', 'Settings']]],
   ];
   return (
@@ -189,6 +191,7 @@ export function SiteLayout() {
         <Outlet />
       </main>
       <Footer />
+      <CheckInToast />
     </div>
   );
 }
