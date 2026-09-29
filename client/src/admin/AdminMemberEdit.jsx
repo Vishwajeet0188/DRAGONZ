@@ -57,7 +57,8 @@ function PlatformsEditor({ rows, setRows, errors }) {
             </Field>
             <Field label="Handle" placeholder="@handle" value={r.handle} onChange={(e) => set(i, { handle: e.target.value })} error={err('handle')} />
             <Field label="Profile URL" placeholder="https://" value={r.url} onChange={(e) => set(i, { url: e.target.value })} error={err('url')} />
-            <Field label="Followers" placeholder="auto" value={r.followerCount ?? ''} onChange={(e) => set(i, { followerCount: e.target.value })} error={err('followerCount')} hint={['YOUTUBE', 'KICK'].includes(r.platform) ? 'Auto from sync' : undefined} />
+            <Field label="Followers" placeholder={r.platform === 'YOUTUBE' ? 'auto' : 'e.g. 52K'} value={r.followerCount ?? ''} onChange={(e) => set(i, { followerCount: e.target.value })} error={err('followerCount')}
+              hint={r.platform === 'YOUTUBE' ? 'Auto from sync' : r.platform === 'KICK' ? 'Type it in — Kick’s API doesn’t share follower counts' : undefined} />
             <div className="flex items-end gap-2">
               <label className="flex h-10 items-center gap-1.5 text-xs text-ink-300"><input type="radio" name="primary" checked={r.isPrimary} onChange={() => set(i, { isPrimary: true })} className="accent-dragon-500" /> Primary</label>
               <button type="button" onClick={() => setRows(rows.filter((_, j) => j !== i))} className="grid h-10 w-10 place-items-center rounded-lg text-ink-400 hover:bg-ink-700 hover:text-dragon-300" aria-label={`Remove ${PLATFORM_META[r.platform].label}`}><Trash2 className="h-4 w-4" /></button>
