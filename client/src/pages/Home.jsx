@@ -338,6 +338,19 @@ function HomeSkeleton() {
   );
 }
 
+/** "Stream 3× and 6 hrs a week" — the goals admins set for Featured crew. */
+function goalText(fc) {
+  const g = fc?.goals;
+  if (!g || g.mode === 'MANUAL') return '';
+  return [g.streams && `${g.streams} streams`, g.hours && `${g.hours} hrs`, g.days && `${g.days} days`, g.uploads && `${g.uploads} upload${g.uploads === 1 ? '' : 's'}`].filter(Boolean).join(' + ') + ' a week';
+}
+function featuredEyebrow(fc) {
+  if (!fc || fc.goals?.mode === 'MANUAL') return 'The crew';
+  if (fc.basis === 'ACTIVE') return 'Most active this week';
+  const g = goalText(fc);
+  return g ? `Earned it: ${g}` : 'Earned this week';
+}
+
 export default function Home() {
   usePageTitle(null);
   const { recruitmentOpen } = useSiteSettings();
@@ -362,11 +375,12 @@ export default function Home() {
       )}
 
       <Section>
-        <SectionHeader eyebrow="The crew" title="Featured members" to="/members" linkLabel="All members" />
-        {d.featuredMembers.length === 0 ? <p className="text-sm text-ink-400">No featured members yet.</p> : (
+        <SectionHeader eyebrow={featuredEyebrow(d.featuredCrew)} title="Featured crew" to="/live" linkLabel="Crew grind this week" />
+        {d.featuredMembers.length === 0 ? (
+          <p className="card p-6 text-sm text-ink-400">Nobody has hit this week’s crew goals yet{goalText(d.featuredCrew) ? ` — ${goalText(d.featuredCrew)} to get featured` : ''}. Who’s first?</p>
+        ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* keep full rows on the 4-column grid */}
-            {d.featuredMembers.slice(0, d.featuredMembers.length >= 4 ? d.featuredMembers.length - (d.featuredMembers.length % 4) : undefined).map((m) => <MemberCard key={m.id} member={m} />)}
+            {d.featuredMembers.map((m) => <MemberCard key={m.id} member={m} />)}
           </div>
         )}
       </Section>

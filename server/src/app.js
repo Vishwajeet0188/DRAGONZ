@@ -24,6 +24,7 @@ import { eventsRouter } from './modules/events/events.routes.js';
 import { newsRouter } from './modules/news/news.routes.js';
 import { communityRouter } from './modules/community/community.routes.js';
 import { hallOfFameRouter } from './modules/achievements/achievements.routes.js';
+import { crewRouter } from './modules/crew/crew.routes.js';
 import { pollsRouter } from './modules/fanzone/polls.js';
 import { socialRouter } from './modules/fanzone/social.js';
 import { quotesRouter } from './modules/fanzone/quotes.js';
@@ -138,6 +139,7 @@ export function createApp() {
   api.use('/quotes', quotesRouter);
   api.use('/clips', clipsRouter);
   api.use('/fans', fansRouter);
+  api.use('/crew', crewRouter);
   api.use('/members/:slug/supporters', memberSupportersRouter);
   api.use('/live', liveRouter);
   api.use('/videos', videosRouter);

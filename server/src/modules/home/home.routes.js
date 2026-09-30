@@ -7,6 +7,7 @@ import { leaderboard } from '../../services/xp.js';
 import { celebrations } from '../fanzone/fans.js';
 import { homeQuotes } from '../fanzone/quotes.js';
 import { latestWinner } from '../fanzone/clips.js';
+import { featuredCrew } from '../../services/crew.js';
 
 const { members, liveStreams, videos, newsPosts, events, achievements, milestones } = schema;
 
@@ -18,7 +19,13 @@ const memberMini = { id: members.id, slug: members.slug, displayName: members.di
 async function getHome() {
   const activeMember = and(isNull(members.deletedAt), eq(members.status, 'ACTIVE'));
   const [featured, live, latestVideos, news, upcoming, hof, recentMilestones, community, roster] = await Promise.all([
-    db.select(memberCardColumns).from(members).where(and(activeMember, eq(members.isFeatured, true))).orderBy(asc(members.rankOrder)).limit(8),
+    // Featured crew is earned by streaming activity (see services/crew.js), plus members an admin pinned.
+    featuredCrew().then(async (fc) => {
+      if (!fc.items.length) return { fc, rows: [] };
+      const rows = await db.select(memberCardColumns).from(members).where(and(activeMember, inArray(members.id, fc.items.map((i) => i.memberId))));
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      return { fc, rows: fc.items.filter((i) => byId.has(i.memberId)).map((i) => ({ ...byId.get(i.memberId), featuredReason: i.reason, crew: i.crew })) };
+    }),
     db.select({ stream: liveStreams, member: memberMini }).from(liveStreams)
       .innerJoin(members, eq(members.id, liveStreams.memberId))
       .where(and(eq(liveStreams.isLive, true), activeMember)).orderBy(desc(liveStreams.viewerCount)).limit(8),
@@ -42,7 +49,7 @@ async function getHome() {
   ]);
 
   const [hydratedFeatured, crew] = await Promise.all([
-    hydrateMembers(featured),
+    hydrateMembers(featured.rows),
     hydrateMembers(roster),
   ]);
 
@@ -58,6 +65,7 @@ async function getHome() {
   return {
     stats: counts,
     featuredMembers: hydratedFeatured,
+    featuredCrew: { basis: featured.fc.basis, goals: featured.fc.goals },
     liveNow: live.map(({ stream, member }) => ({ ...stream, member })),
     latestVideos: latestVideos.map(({ video, member }) => ({ ...video, member })),
     announcements: news,

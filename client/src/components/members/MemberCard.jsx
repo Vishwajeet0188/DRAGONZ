@@ -4,6 +4,7 @@ import { Avatar } from '../ui/Avatar.jsx';
 import { Badge, LiveBadge } from '../ui/Bits.jsx';
 import { PLATFORM_META } from '../../lib/platforms.js';
 import { compact, safeUrl } from '../../lib/format.js';
+import { CrewChips } from '../crew/Crew.jsx';
 
 /** Big, labelled social button: brand icon + name (+ follower count). */
 function SocialButton({ platform, url, followerCount, name }) {
@@ -43,6 +44,7 @@ export function MemberCard({ member }) {
           {member.isCreator && <Badge tone="ember"><Sparkles className="h-3 w-3" aria-hidden="true" /> Creator</Badge>}
           {member.status === 'ALUMNI' && <Badge>Alumni</Badge>}
         </div>
+        {member.crew && <CrewChips crew={member.crew} reason={member.featuredReason} />}
         {member.platforms?.length > 0 && (
           // z-10 keeps social links clickable above the full-card profile link
           <div className="relative z-10 mt-auto flex flex-wrap gap-2 pt-4">

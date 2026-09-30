@@ -17,6 +17,7 @@ import { achievementsAdminRouter } from '../achievements/achievements.routes.js'
 import { supportersAdminRouter } from '../supporters/supporters.routes.js';
 import { platformAdminRouter } from './platform.routes.js';
 import { pollsAdminRouter } from '../fanzone/polls.js';
+import { crewAdminRouter } from '../crew/crew.routes.js';
 import { applicationsAdminRouter } from '../fanzone/recruitment.js';
 import { quotesAdminRouter } from '../fanzone/quotes.js';
 import { commentsAdminRouter } from '../fanzone/social.js';
@@ -92,6 +93,7 @@ adminRouter.use('/supporters', supportersAdminRouter);
 adminRouter.use(achievementsAdminRouter); // /achievements, /milestones
 adminRouter.use(platformAdminRouter); // /announcements, /analytics, /settings
 adminRouter.use('/polls', pollsAdminRouter);
+adminRouter.use('/crew', crewAdminRouter);
 adminRouter.use('/applications', applicationsAdminRouter);
 adminRouter.use('/quotes', quotesAdminRouter);
 adminRouter.use('/comments', commentsAdminRouter);

@@ -11,6 +11,7 @@ import { LiveDot } from '../components/ui/Bits.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { CardGridSkeleton, EmptyState, ErrorState } from '../components/ui/States.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { CrewWeekBoard } from '../components/crew/Crew.jsx';
 
 export default function Live() {
   usePageTitle('Live now');
@@ -74,6 +75,7 @@ export default function Live() {
               </ul>
             </section>
           )}
+          <CrewWeekBoard />
         </>
       )}
     </div>

@@ -11,6 +11,10 @@ import { logger } from '../lib/logger.js';
 
 const { platformAccounts, members, videos, liveStreams, siteSettings } = schema;
 const STALE_MS = 30 * 60_000;
+// When we only notice a stream has ended later (server asleep, provider hiccup), assume it ended at most this long
+// after we last saw it live — so crew stream-hours are never inflated by our own downtime.
+const END_GRACE = "interval '10 minutes'";
+const endedAtExpr = (now) => sql`least(${now.toISOString()}::timestamptz, ${liveStreams.updatedAt} + ${sql.raw(END_GRACE)})`;
 const STATUS_KEY = 'integrations.status';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -96,20 +100,40 @@ async function persistLive(platform, result, now) {
     seen.add(externalId);
     const [row] = await db.insert(liveStreams).values({
       memberId: s.memberId, platformAccountId: s.accountId, platform, externalId, title: s.title, url: s.url,
-      thumbnailUrl: s.thumbnailUrl, viewerCount: s.viewerCount, isLive: true, startedAt: s.startedAt, source: 'SYNC',
+      thumbnailUrl: s.thumbnailUrl, viewerCount: s.viewerCount, peakViewers: s.viewerCount, isLive: true, startedAt: s.startedAt, source: 'SYNC',
     }).onConflictDoUpdate({
       target: [liveStreams.platform, liveStreams.externalId],
-      set: { title: s.title, viewerCount: s.viewerCount, thumbnailUrl: s.thumbnailUrl, isLive: true, endedAt: null, updatedAt: now },
+      set: {
+        title: s.title, viewerCount: s.viewerCount, thumbnailUrl: s.thumbnailUrl, isLive: true, endedAt: null, updatedAt: now,
+        peakViewers: sql`greatest(coalesce(${liveStreams.peakViewers}, 0), coalesce(excluded.viewer_count, 0))`,
+      },
     }).returning();
     if (!currentIds.has(externalId)) started.push(row);
   }
 
   const ended = current.filter((r) => !seen.has(r.externalId));
   if (ended.length) {
-    await db.update(liveStreams).set({ isLive: false, endedAt: now, updatedAt: now })
+    await db.update(liveStreams).set({ isLive: false, endedAt: endedAtExpr(now), updatedAt: now })
       .where(inArray(liveStreams.id, ended.map((r) => r.id)));
   }
   return { started, ended };
+}
+
+/**
+ * Finished YouTube streams carry their exact start/end time. Record (or correct) them so crew stream-hours are
+ * right even for streams we missed while the server slept. Never marks anything live, never notifies.
+ */
+async function persistPastStreams(platform, items = []) {
+  for (const s of items) {
+    await db.insert(liveStreams).values({
+      memberId: s.memberId, platformAccountId: s.accountId, platform, externalId: s.externalId, title: s.title, url: s.url,
+      thumbnailUrl: s.thumbnailUrl, isLive: false, startedAt: s.startedAt, endedAt: s.endedAt, source: 'SYNC',
+    }).onConflictDoUpdate({
+      target: [liveStreams.platform, liveStreams.externalId],
+      set: { startedAt: s.startedAt, endedAt: s.endedAt, isLive: false },
+      where: eq(liveStreams.isLive, false),
+    });
+  }
 }
 
 /** Rough YouTube units per run, used to keep polling under the daily quota. */
@@ -154,6 +178,7 @@ export function createSyncService({ providers, onStreamStarted = async () => {},
       await persistAccounts(result, now);
       await persistVideos(provider.platform, result.videos);
       const { started, ended } = await persistLive(provider.platform, result, now);
+      await persistPastStreams(provider.platform, result.pastStreams);
       st.ok = true;
       st.error = null;
       st.lastRunAt = now.toISOString();
@@ -184,7 +209,7 @@ export function createSyncService({ providers, onStreamStarted = async () => {},
     await db.update(liveStreams).set({ isLive: false, endedAt: now, updatedAt: now })
       .where(and(eq(liveStreams.isLive, true), eq(liveStreams.source, 'MOCK')));
     // Anything we stopped hearing about (account deleted, sync disabled, provider down) → ended.
-    await db.update(liveStreams).set({ isLive: false, endedAt: now, updatedAt: now })
+    await db.update(liveStreams).set({ isLive: false, endedAt: endedAtExpr(now), updatedAt: now })
       .where(and(eq(liveStreams.isLive, true), eq(liveStreams.source, 'SYNC'), lt(liveStreams.updatedAt, new Date(now - STALE_MS))));
   }
 
@@ -212,4 +237,4 @@ export function createSyncService({ providers, onStreamStarted = async () => {},
   return { run, isRunning: () => Boolean(running) };
 }
 
-export const _internals = { persistLive, sql };
+export const _internals = { persistLive, persistPastStreams, sql };

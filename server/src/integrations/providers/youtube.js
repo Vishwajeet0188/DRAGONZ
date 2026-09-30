@@ -117,6 +117,10 @@ export function createYouTubeProvider({ apiKey, fetchImpl = fetch, videosPerChan
           if (sn.liveBroadcastContent === 'live') {
             result.live.push({ ...base, viewerCount: num(live.concurrentViewers), startedAt: new Date(live.actualStartTime ?? sn.publishedAt) });
           } else if (sn.liveBroadcastContent === 'none') {
+            // A finished live stream: exact start/end times let crew stats count it even if we missed it live.
+            if (live.actualStartTime && live.actualEndTime) {
+              (result.pastStreams ??= []).push({ ...base, startedAt: new Date(live.actualStartTime), endedAt: new Date(live.actualEndTime) });
+            }
             result.videos.push({ ...base, durationSec: isoDurationToSeconds(v.contentDetails?.duration), viewCount: num(v.statistics?.viewCount), publishedAt: new Date(live.actualStartTime ?? sn.publishedAt) });
           }
           // 'upcoming' (scheduled premieres/streams) is ignored for now.

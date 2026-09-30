@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import {
   ArrowLeft, BarChart3, Bell, Calendar, Image as ImageIcon, LayoutDashboard, Menu, Newspaper, Radio, ScrollText, Settings,
-  Heart, MessageCircle, Quote, Sparkles, Swords, Trophy, UserCog, Users, Video, Vote, X,
+  Flame, Heart, MessageCircle, Quote, Sparkles, Swords, Trophy, UserCog, Users, Video, Vote, X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Logo } from '../components/ui/Logo.jsx';
@@ -14,6 +14,7 @@ import AdminUsers from './AdminUsers.jsx';
 import AdminAudit from './AdminAudit.jsx';
 import AdminIntegrations from './AdminIntegrations.jsx';
 import AdminSoon from './AdminSoon.jsx';
+import AdminCrew from './AdminCrew.jsx';
 import { AdminEventEdit, AdminEventsList, AdminNewsEdit, AdminNewsList } from './AdminContent.jsx';
 import { AdminCommunity, AdminHallOfFame, AdminSupporters, AdminVideos } from './AdminModeration.jsx';
 import { AdminApplications, AdminComments, AdminPolls, AdminQuotes } from './AdminFanZone.jsx';
@@ -24,6 +25,7 @@ const NAV = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, perm: 'stats:read', end: true },
   { to: '/admin/members', label: 'Members', icon: Users, perm: 'members:manage' },
   { to: '/admin/creators', label: 'Creators', icon: Sparkles, perm: 'creators:manage' },
+  { to: '/admin/crew', label: 'Featured crew', icon: Flame, perm: 'members:manage' },
   { to: '/admin/videos', label: 'Videos', icon: Video, perm: 'videos:manage' },
   { to: '/admin/live', label: 'Live integrations', icon: Radio, perm: 'live:manage' },
   { to: '/admin/news', label: 'News', icon: Newspaper, perm: 'news:manage' },
@@ -104,6 +106,7 @@ export default function AdminApp() {
           <Route path="members" element={<AdminMembers />} />
           <Route path="members/new" element={<AdminMemberEdit />} />
           <Route path="members/:id" element={<AdminMemberEdit />} />
+          <Route path="crew" element={<AdminCrew />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="audit" element={<AdminAudit />} />
           <Route path="live" element={<AdminIntegrations />} />

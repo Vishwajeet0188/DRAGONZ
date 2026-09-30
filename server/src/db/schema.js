@@ -171,6 +171,7 @@ export const liveStreams = pgTable('live_streams', {
   url: text('url').notNull(),
   thumbnailUrl: text('thumbnail_url'),
   viewerCount: integer('viewer_count'),
+  peakViewers: integer('peak_viewers'), // highest concurrent viewers we saw during the stream
   isLive: boolean('is_live').notNull().default(true),
   startedAt: ts('started_at').notNull(),
   endedAt: ts('ended_at'),
@@ -180,6 +181,7 @@ export const liveStreams = pgTable('live_streams', {
   uniqueIndex('live_streams_external_key').on(t.platform, t.externalId),
   index('live_streams_live_idx').on(t.isLive),
   index('live_streams_member_live_idx').on(t.memberId, t.isLive),
+  index('live_streams_member_started_idx').on(t.memberId, t.startedAt),
 ]);
 
 export const milestones = pgTable('milestones', {

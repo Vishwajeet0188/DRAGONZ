@@ -220,7 +220,7 @@ export default function AdminMemberEdit() {
               <option value="ACTIVE">Active</option><option value="INACTIVE">Inactive (hidden)</option><option value="ALUMNI">Alumni</option>
             </Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" {...check('isCreator')} /> Content creator</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" {...check('isFeatured')} /> Featured on homepage</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" {...check('isFeatured')} /> Pin to Featured crew (always shown, even without hitting the weekly goals)</label>
           </section>
 
           {!isNew && (

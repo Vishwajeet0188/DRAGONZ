@@ -3,6 +3,7 @@ import { db, schema } from '../../db/index.js';
 import { notFound } from '../../lib/errors.js';
 import { escapeLike, paginate, pageMeta } from '../../lib/util.js';
 import { listPublic } from '../community/community.service.js';
+import { crewForMember } from '../../services/crew.js';
 
 const { members, platformAccounts, liveStreams, videos, achievements, milestones, follows, communitySubmissions } = schema;
 
@@ -107,7 +108,10 @@ export async function getMemberProfile(slug, viewerId) {
       : Promise.resolve([]),
   ]);
 
-  const liveNow = await db.select().from(liveStreams).where(and(eq(liveStreams.memberId, id), eq(liveStreams.isLive, true)));
+  const [liveNow, crew] = await Promise.all([
+    db.select().from(liveStreams).where(and(eq(liveStreams.memberId, id), eq(liveStreams.isLive, true))),
+    member.status === 'ACTIVE' ? crewForMember(id).catch(() => null) : null,
+  ]);
 
   return {
     ...hydrated,
@@ -118,6 +122,7 @@ export async function getMemberProfile(slug, viewerId) {
     milestones: memberMilestones,
     communityHighlights: highlights,
     stats: { followers },
+    crew,
     viewer: { following: viewerFollow.length > 0, notifyLive: viewerFollow[0]?.notifyLive ?? false },
   };
 }

@@ -1,3 +1,4 @@
+import { CrewProgress } from '../components/crew/Crew.jsx';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -205,6 +206,8 @@ export default function MemberProfile() {
                 <div className="space-y-2">{m.platforms.map((p) => <PlatformRow key={p.platform} p={p} />)}</div>
               </section>
             )}
+
+            <CrewProgress crew={m.crew} name={m.displayName} />
 
             <SupportersSection slug={m.slug} name={m.displayName} />
 

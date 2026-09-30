@@ -36,6 +36,13 @@
       "when": 1790688985481,
       "tag": "0004_fan_zone",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790762506072,
+      "tag": "0005_crew_stats",
+      "breakpoints": true
     }
   ]
 }
