@@ -346,7 +346,6 @@ function goalText(fc) {
 }
 function featuredEyebrow(fc) {
   if (!fc || fc.goals?.mode === 'MANUAL') return 'The crew';
-  if (fc.basis === 'ACTIVE') return 'Most active this week';
   const g = goalText(fc);
   return g ? `Earned it: ${g}` : 'Earned this week';
 }

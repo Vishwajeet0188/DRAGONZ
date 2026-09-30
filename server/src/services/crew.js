@@ -205,7 +205,7 @@ export async function crewForMember(memberId) {
 /**
  * Who appears in "Featured crew".
  *  AUTO: pinned members + everyone who hit the goals this week or last week, best score first.
- *        If nobody qualifies yet, the most active members this week fill in (so the section is never stale).
+ *        Nobody else is shown — if nobody has hit the goals yet, only pinned members appear.
  *  MANUAL: pinned members only (the old behaviour).
  */
 export async function featuredCrew() {
@@ -223,12 +223,6 @@ export async function featuredCrew() {
       .sort((a, b) => (b.score + b.lastWeekScore) - (a.score + a.lastWeekScore));
     picked = [...pinned.map((r) => ({ row: r, reason: 'PINNED' })), ...earned.map((r) => ({ row: r, reason: r.qualifiedThisWeek ? 'EARNED' : 'EARNED_LAST_WEEK' }))];
     basis = 'GOALS';
-    if (!earned.length) {
-      const active = rows.filter((r) => !r.pinned && !r.excluded && r.score + r.lastWeekScore > 0)
-        .sort((a, b) => (b.score + b.lastWeekScore) - (a.score + a.lastWeekScore)).slice(0, 4);
-      picked.push(...active.map((r) => ({ row: r, reason: 'ACTIVE' })));
-      if (active.length) basis = 'ACTIVE';
-    }
   }
   // Streamer of the Week always leads.
   picked.sort((a, b) => Number(b.row.member.id === report.streamerOfWeekId) - Number(a.row.member.id === report.streamerOfWeekId));

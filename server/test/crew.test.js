@@ -123,11 +123,10 @@ describe('featured crew', () => {
     assert.deepEqual((await request(app).get('/api/home')).body.data.featuredMembers.map((m) => m.slug), ['multi']);
   });
 
-  test('stricter goals remove members who no longer qualify; nobody qualifying falls back to most active', async () => {
+  test('stricter goals remove members who no longer qualify — nobody else fills in', async () => {
     await admin.put('/api/admin/crew/rules', { minHours: 20 });
     const home = (await request(app).get('/api/home')).body.data;
-    assert.equal(home.featuredCrew.basis, 'ACTIVE');
-    assert.ok(home.featuredMembers.every((m) => m.featuredReason === 'ACTIVE' || m.featuredReason === 'PINNED'));
+    assert.deepEqual(home.featuredMembers, []);
     await admin.put('/api/admin/crew/rules', { minHours: 6 });
   });
 });

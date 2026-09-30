@@ -13,20 +13,13 @@ function timeLeft(to) {
   return d ? `${d}d ${h}h left` : `${h}h left`;
 }
 
-/** Small chips on a featured member card: why they're featured + this week's numbers. */
-export function CrewChips({ crew, reason }) {
-  if (!crew) return null;
-  const wk = crew.thisWeek;
-  const last = crew.lastWeek;
+/** Small chips on a featured member card: only the honours (Streamer of the Week, streak). */
+export function CrewChips({ crew }) {
+  if (!crew || !(crew.isStreamerOfWeek || crew.streakWeeks >= 2)) return null;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
       {crew.isStreamerOfWeek && <span className="inline-flex items-center gap-1 rounded-md bg-dragon-400 px-1.5 py-0.5 text-ink-950"><Crown className="h-3 w-3" aria-hidden="true" /> Streamer of the Week</span>}
       {crew.streakWeeks >= 2 && <span className="inline-flex items-center gap-1 rounded-md border border-ember-500/40 bg-ember-500/10 px-1.5 py-0.5 text-ember-400"><Flame className="h-3 w-3" aria-hidden="true" /> {crew.streakWeeks}-week streak</span>}
-      {reason === 'PINNED' && !(wk?.hours > 0) && <span className="rounded-md border border-dragon-500/30 bg-dragon-500/10 px-1.5 py-0.5 text-dragon-300">📌 Crew pick</span>}
-      {reason === 'PINNED' && !(wk?.hours > 0) ? null : wk && (wk.hours > 0 || reason !== 'EARNED_LAST_WEEK')
-        ? <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-ink-300">{hrs(wk.hours)}h · {wk.streams} stream{wk.streams === 1 ? '' : 's'} this week</span>
-        : last && <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-ink-300">{hrs(last.hours)}h · {last.streams} streams last week</span>}
-      {crew.badges?.filter((b) => b.key !== 'STREAMER_OF_WEEK').slice(0, 3).map((b) => <span key={b.key} title={`${b.name} — ${b.description}`} aria-label={b.name}>{b.icon}</span>)}
     </div>
   );
 }
