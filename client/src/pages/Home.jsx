@@ -131,7 +131,6 @@ function UpcomingEvents({ items }) {
                   <div className="min-w-0">
                     <p className="text-xs text-ink-300">{next.category} · {formatDateTime(next.startsAt)}</p>
                     <h3 className="mt-0.5 font-display text-2xl font-bold leading-tight text-white group-hover:text-dragon-200 sm:text-3xl">{next.title}</h3>
-                    {next.excerpt && <p className="mt-1.5 line-clamp-2 max-w-xl text-sm text-ink-300">{next.excerpt.replace(/^#+\s*/gm, '').replace(/^[-*]\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*/g, '').replace(/\s*\n+\s*/g, ' ').trim()}</p>}
                   </div>
                 </div>
                 <span className={`absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-display text-xs font-bold uppercase tracking-wider ${cd.live ? 'bg-live text-white' : 'border border-dragon-500/40 bg-ink-950/80 text-dragon-300 backdrop-blur'}`}>
@@ -142,6 +141,8 @@ function UpcomingEvents({ items }) {
           })()}
           <div className="px-5 pb-5 pt-3">
             <Link to={`/events/${next.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-dragon-300 hover:text-white">Details &amp; reminder <ArrowRight className="h-4 w-4" /></Link>
+            {next.excerpt && <p className="mt-3 text-sm leading-relaxed text-ink-300">{next.excerpt.replace(/^#+\s*/gm, '').replace(/^[-*]\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*/g, '').replace(/\s*\n+\s*/g, ' ').trim()}</p>}
+            {next.hosts?.length > 0 && <p className="mt-3 text-xs text-ink-400">Hosted by <span className="text-ink-200">{next.hosts.join(', ')}</span></p>}
           </div>
           {rest.length > 0 && (
             <ul className="mt-auto divide-y divide-ink-700/70 border-t border-ink-700/70">
