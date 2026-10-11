@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ArrowRight, CalendarDays, Clock, Camera, Clapperboard, PartyPopper, Swords, Film, Megaphone, Palette, Pin, Sparkles, Trophy, Upload, Users, Image as ImageIcon, TrendingUp } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock, Camera, Clapperboard, PartyPopper, Swords, Film, Megaphone, Palette, Pin, Sparkles, Trophy, Upload, Users, Image as ImageIcon, TrendingUp, Radio } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { compact, formatDate, formatDateTime, safeUrl, timeAgo, titleCase } from '../lib/format.js';
 import { PLATFORM_META } from '../lib/platforms.js';
@@ -142,7 +142,21 @@ function UpcomingEvents({ items }) {
           <div className="px-5 pb-5 pt-3">
             <Link to={`/events/${next.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-dragon-300 hover:text-white">Details &amp; reminder <ArrowRight className="h-4 w-4" /></Link>
             {next.excerpt && <p className="mt-3 text-sm leading-relaxed text-ink-300">{next.excerpt.replace(/^#+\s*/gm, '').replace(/^[-*]\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*/g, '').replace(/\s*\n+\s*/g, ' ').trim()}</p>}
-            {next.hosts?.length > 0 && <p className="mt-3 text-xs text-ink-400">Hosted by <span className="text-ink-200">{next.hosts.join(', ')}</span></p>}
+            {next.hosts?.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-400">
+                <span>Hosted by</span>
+                {next.hosts.map((h, i) => (
+                  <span key={h.slug ?? i} className="inline-flex items-center gap-1.5">
+                    <Link to={`/members/${h.slug}`} className="font-semibold text-ink-200 hover:text-white">{h.name}</Link>
+                    {safeUrl(h.streamUrl) && (
+                      <a href={h.streamUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-dragon-500/40 bg-dragon-500/10 px-2 py-0.5 font-semibold text-dragon-300 transition hover:bg-dragon-500/20 hover:text-white">
+                        <Radio className="h-3 w-3" aria-hidden="true" /> Watch now
+                      </a>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           {rest.length > 0 && (
             <ul className="mt-auto divide-y divide-ink-700/70 border-t border-ink-700/70">

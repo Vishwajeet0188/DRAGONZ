@@ -35,7 +35,7 @@ async function getHome() {
     db.select({ id: newsPosts.id, slug: newsPosts.slug, title: newsPosts.title, excerpt: newsPosts.excerpt, category: newsPosts.category, featuredImageUrl: newsPosts.featuredImageUrl, publishedAt: newsPosts.publishedAt, isPinned: newsPosts.isPinned })
       .from(newsPosts).where(and(eq(newsPosts.status, 'PUBLISHED'), isNull(newsPosts.deletedAt)))
       .orderBy(desc(newsPosts.isPinned), desc(newsPosts.publishedAt)).limit(3),
-    db.select({ id: events.id, slug: events.slug, title: events.title, category: events.category, startsAt: events.startsAt, bannerUrl: events.bannerUrl, status: events.status, excerpt: sql`left(${events.description}, 160)`, hosts: events.hosts, organizerMemberId: events.organizerMemberId })
+    db.select({ id: events.id, slug: events.slug, title: events.title, category: events.category, startsAt: events.startsAt, bannerUrl: events.bannerUrl, status: events.status, excerpt: sql`left(${events.description}, 160)`, hosts: events.hosts, organizerMemberId: events.organizerMemberId, streamUrl: events.streamUrl })
       .from(events).where(and(inArray(events.status, ['SCHEDULED', 'LIVE']), gte(events.startsAt, new Date(Date.now() - 6 * 3600_000)), isNull(events.deletedAt)))
       .orderBy(asc(events.startsAt)).limit(4),
     db.select().from(achievements).where(eq(achievements.isFeatured, true)).orderBy(desc(achievements.achievedAt)).limit(4),
@@ -50,16 +50,15 @@ async function getHome() {
 
   // Resolve host display names for the upcoming-events cards.
   const upHostIds = [...new Set(upcoming.flatMap((e) => (Array.isArray(e.hosts) ? e.hosts : []).map((h) => h.memberId)).concat(upcoming.map((e) => e.organizerMemberId)).filter(Boolean))];
-  const upHostNames = new Map();
+  const upHostInfo = new Map();
   if (upHostIds.length) {
-    const hr = await db.select({ id: members.id, displayName: members.displayName }).from(members).where(inArray(members.id, upHostIds));
-    for (const m of hr) upHostNames.set(m.id, m.displayName);
+    const hr = await db.select({ id: members.id, slug: members.slug, displayName: members.displayName }).from(members).where(inArray(members.id, upHostIds));
+    for (const m of hr) upHostInfo.set(m.id, { slug: m.slug, name: m.displayName });
   }
-  const upcomingEvents = upcoming.map(({ hosts, organizerMemberId, ...e }) => ({
-    ...e,
-    hosts: (Array.isArray(hosts) && hosts.length ? hosts.map((h) => h.memberId) : (organizerMemberId ? [organizerMemberId] : []))
-      .map((id) => upHostNames.get(id)).filter(Boolean),
-  }));
+  const upcomingEvents = upcoming.map(({ hosts, organizerMemberId, streamUrl, ...e }) => {
+    const list = Array.isArray(hosts) && hosts.length ? hosts : (organizerMemberId ? [{ memberId: organizerMemberId, streamUrl }] : []);
+    return { ...e, hosts: list.map((h) => { const m = upHostInfo.get(h.memberId); return m ? { name: m.name, slug: m.slug, streamUrl: h.streamUrl || null } : null; }).filter(Boolean) };
+  });
 
   const [hydratedFeatured, crew] = await Promise.all([
     hydrateMembers(featured.rows),
