@@ -43,6 +43,11 @@ const eventBody = z.object({
   externalUrl: httpsUrl.nullable().optional().or(z.literal('').transform(() => null)),
   status: z.enum(['DRAFT', 'SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED']).default('SCHEDULED'),
   organizerMemberId: z.string().uuid().nullable().optional().or(z.literal('').transform(() => null)),
+  hosts: z.array(z.object({
+    memberId: z.string().uuid(),
+    streamUrl: httpsUrl.nullable().optional().or(z.literal('').transform(() => null)),
+  }).strict()).max(12).optional()
+    .refine((a) => !a || new Set(a.map((h) => h.memberId)).size === a.length, { message: 'Each host can only be added once' }),
 }).strict().refine((b) => !b.endsAt || b.endsAt > b.startsAt, { message: 'End must be after start', path: ['endsAt'] });
 const idParam = z.object({ id: z.string().uuid() });
 

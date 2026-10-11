@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, Pencil, Pin, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pencil, Pin, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { formatDate, formatDateTime, titleCase } from '../lib/format.js';
 import { Badge, Pagination } from '../components/ui/Bits.jsx';
@@ -11,7 +11,7 @@ import { Field, FormAlert } from '../components/ui/Field.jsx';
 import { Markdown } from '../components/ui/Markdown.jsx';
 import { ErrorState, PageLoader, Skeleton } from '../components/ui/States.jsx';
 import { AdminHeader, Table } from './ui.jsx';
-import { ImageField, MemberSelect, fromLocalInput, toLocalInput } from './fields.jsx';
+import { ImageField, MemberSelect, useMemberOptions, fromLocalInput, toLocalInput } from './fields.jsx';
 
 const STATUS_TONE = { PUBLISHED: 'success', DRAFT: 'default', ARCHIVED: 'default', SCHEDULED: 'ember', LIVE: 'dragon', COMPLETED: 'default', CANCELLED: 'default' };
 
@@ -160,15 +160,54 @@ export function AdminEventsList() {
   );
 }
 
+/** Multiple hosts, each with their own optional stream link. */
+function HostsEditor({ value = [], onChange }) {
+  const members = useMemberOptions();
+  const rows = value.length ? value : [{ memberId: '', streamUrl: '' }];
+  const update = (i, patch) => onChange(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const chosen = new Set(rows.map((r) => r.memberId).filter(Boolean));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="label mb-0">Hosts &amp; their streams</span>
+        <span className="text-xs text-ink-500">Add every creator hosting this event</span>
+      </div>
+      <div className="space-y-2">
+        {rows.map((r, i) => (
+          <div key={i} className="grid grid-cols-1 gap-2 rounded-xl border border-ink-700 p-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto]">
+            <Field as="select" value={r.memberId} onChange={(e) => update(i, { memberId: e.target.value })} aria-label={`Host ${i + 1}`}>
+              <option value="">Choose a host…</option>
+              {members.data?.filter((m) => m.id === r.memberId || !chosen.has(m.id)).map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </Field>
+            <Field value={r.streamUrl ?? ''} onChange={(e) => update(i, { streamUrl: e.target.value })} placeholder="Their stream link (https://kick.com/… or youtube)" aria-label={`Host ${i + 1} stream`} />
+            <button type="button" onClick={() => onChange(rows.filter((_, j) => j !== i))} disabled={rows.length === 1}
+              className="inline-grid h-[42px] w-10 place-items-center self-end rounded-xl border border-ink-600 text-ink-400 hover:border-red-500/50 hover:text-red-400 disabled:opacity-30" aria-label="Remove host">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={() => onChange([...rows, { memberId: '', streamUrl: '' }])}
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ink-600 px-3 py-1.5 text-sm font-semibold text-ink-200 hover:border-dragon-500 hover:text-white">
+        <Plus className="h-4 w-4" /> Add another host
+      </button>
+      <p className="mt-1.5 text-xs text-ink-500">The first host&rsquo;s stream is used for reminders. Each host with a link gets their own &ldquo;Watch&rdquo; button on the event.</p>
+    </div>
+  );
+}
+
 export function AdminEventEdit() {
   const { id } = useParams();
   const ed = useEditor({
     base: '/admin/events', id, queryKey: ['admin', 'events'],
-    empty: { title: '', slug: '', description: '', category: 'Community', startsAt: '', endsAt: '', bannerUrl: '', streamUrl: '', externalUrl: '', status: 'SCHEDULED', organizerMemberId: '' },
-    toForm: (e) => ({ ...e, startsAt: toLocalInput(e.startsAt), endsAt: toLocalInput(e.endsAt), bannerUrl: e.bannerUrl ?? '', streamUrl: e.streamUrl ?? '', externalUrl: e.externalUrl ?? '', organizerMemberId: e.organizerMemberId ?? '' }),
+    empty: { title: '', slug: '', description: '', category: 'Community', startsAt: '', endsAt: '', bannerUrl: '', streamUrl: '', externalUrl: '', status: 'SCHEDULED', organizerMemberId: '', hosts: [] },
+    toForm: (e) => ({ ...e, startsAt: toLocalInput(e.startsAt), endsAt: toLocalInput(e.endsAt), bannerUrl: e.bannerUrl ?? '', streamUrl: e.streamUrl ?? '', externalUrl: e.externalUrl ?? '', organizerMemberId: e.organizerMemberId ?? '',
+      hosts: (Array.isArray(e.hosts) && e.hosts.length ? e.hosts : (e.organizerMemberId ? [{ memberId: e.organizerMemberId, streamUrl: e.streamUrl ?? '' }] : []))
+        .map((h) => ({ memberId: h.memberId, streamUrl: h.streamUrl ?? '' })) }),
     toBody: (f) => ({
       title: f.title, slug: f.slug, description: f.description, category: f.category, status: f.status,
-      startsAt: fromLocalInput(f.startsAt), endsAt: fromLocalInput(f.endsAt), bannerUrl: f.bannerUrl, streamUrl: f.streamUrl, externalUrl: f.externalUrl, organizerMemberId: f.organizerMemberId,
+      startsAt: fromLocalInput(f.startsAt), endsAt: fromLocalInput(f.endsAt), bannerUrl: f.bannerUrl, externalUrl: f.externalUrl,
+      hosts: (f.hosts ?? []).filter((h) => h.memberId).map((h) => ({ memberId: h.memberId, streamUrl: h.streamUrl || null })),
     }),
   });
   if (!ed.isNew && ed.q.isPending) return <PageLoader />;
@@ -188,13 +227,10 @@ export function AdminEventEdit() {
             <Field label="Starts *" type="datetime-local" {...ed.bind('startsAt')} hint="Your local time" />
             <Field label="Ends" type="datetime-local" {...ed.bind('endsAt')} />
             <Field label="Category *" maxLength={40} {...ed.bind('category')} hint="e.g. Race, Tournament, Premiere" />
-            <MemberSelect label="Host / organizer" value={ed.form.organizerMemberId} onChange={ed.set('organizerMemberId')} />
-          </div>
-          <Field as="textarea" label="Description *" rows={8} maxLength={10000} {...ed.bind('description')} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Stream URL" placeholder="https://kick.com/…" {...ed.bind('streamUrl')} />
             <Field label="More info URL" placeholder="https://…" {...ed.bind('externalUrl')} />
           </div>
+          <Field as="textarea" label="Description *" rows={8} maxLength={10000} {...ed.bind('description')} />
+          <HostsEditor value={ed.form.hosts} onChange={ed.set('hosts')} />
         </section>
         <div className="space-y-6">
           <section className="card space-y-4 p-5">

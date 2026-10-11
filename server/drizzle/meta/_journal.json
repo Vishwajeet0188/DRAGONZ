@@ -43,6 +43,13 @@
       "when": 1790762506072,
       "tag": "0005_crew_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791703408474,
+      "tag": "0006_event_hosts",
+      "breakpoints": true
     }
   ]
 }

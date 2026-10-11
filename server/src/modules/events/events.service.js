@@ -10,6 +10,29 @@ import { logger } from '../../lib/logger.js';
 const { events, eventReminders, members, users, notifications, notificationPreferences } = schema;
 const organizerMini = { id: members.id, slug: members.slug, displayName: members.displayName, avatarUrl: members.avatarUrl, accentColor: members.accentColor };
 const publicStatuses = ['SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED'];
+
+/** Turn the body's hosts (and/or legacy organizer/stream) into a clean hosts array + legacy mirror columns. */
+export function normalizeHosts(body) {
+  let hosts = Array.isArray(body.hosts) ? body.hosts : [];
+  if (!hosts.length && body.organizerMemberId) hosts = [{ memberId: body.organizerMemberId, streamUrl: body.streamUrl ?? null }];
+  // de-dupe members, drop blanks, cap
+  const seen = new Set();
+  hosts = hosts.filter((h) => h?.memberId && !seen.has(h.memberId) && seen.add(h.memberId))
+    .map((h) => ({ memberId: h.memberId, streamUrl: h.streamUrl || null })).slice(0, 12);
+  const first = hosts[0];
+  return { hosts, organizerMemberId: first?.memberId ?? null, streamUrl: first?.streamUrl ?? null };
+}
+
+/** Attach member details to a stored hosts array (preserves order, drops hosts whose member is gone). */
+async function resolveHosts(event) {
+  let hosts = Array.isArray(event.hosts) ? event.hosts : [];
+  if (!hosts.length && event.organizerMemberId) hosts = [{ memberId: event.organizerMemberId, streamUrl: event.streamUrl ?? null }];
+  const ids = hosts.map((h) => h.memberId).filter(Boolean);
+  if (!ids.length) return [];
+  const rows = await db.select(organizerMini).from(members).where(inArray(members.id, ids));
+  const by = new Map(rows.map((m) => [m.id, m]));
+  return hosts.map((h) => ({ member: by.get(h.memberId) ?? null, streamUrl: h.streamUrl || null })).filter((h) => h.member);
+}
 const REMINDER_LEAD_MS = 60 * 60_000; // remind 1 hour before start
 
 // ── Public ────────────────────────────────────────────────────────────────
@@ -35,7 +58,8 @@ export async function getEvent(slug, viewerId) {
     db.select({ reminders: count() }).from(eventReminders).where(eq(eventReminders.eventId, row.event.id)),
     viewerId ? db.select().from(eventReminders).where(and(eq(eventReminders.eventId, row.event.id), eq(eventReminders.userId, viewerId))).limit(1) : [],
   ]);
-  return { ...row.event, organizer: row.organizer?.id ? row.organizer : null, stats: { reminders }, viewer: { reminder: mine.length > 0 } };
+  const hosts = await resolveHosts(row.event);
+  return { ...row.event, hosts, organizer: hosts[0]?.member ?? (row.organizer?.id ? row.organizer : null), stats: { reminders }, viewer: { reminder: mine.length > 0 } };
 }
 
 export async function setReminder(slug, userId, on) {
@@ -121,7 +145,7 @@ export async function adminGetEvent(id) {
 
 export async function createEvent(actor, body) {
   const slug = await uniqueSlug(db, events, body.slug || body.title);
-  const [row] = await db.insert(events).values({ ...body, slug, createdById: actor.id }).returning();
+  const [row] = await db.insert(events).values({ ...body, ...normalizeHosts(body), slug, createdById: actor.id }).returning();
   await audit(actor.id, 'event.create', 'event', row.id, { title: row.title });
   return row;
 }
@@ -129,6 +153,7 @@ export async function createEvent(actor, body) {
 export async function updateEvent(actor, id, patch) {
   await adminGetEvent(id);
   const changes = compact(patch);
+  if ('hosts' in patch || 'organizerMemberId' in patch) Object.assign(changes, normalizeHosts(patch));
   if (changes.slug) changes.slug = await uniqueSlug(db, events, changes.slug, id);
   const [row] = await db.update(events).set(changes).where(eq(events.id, id)).returning();
   await audit(actor.id, 'event.update', 'event', id, { fields: Object.keys(changes) });

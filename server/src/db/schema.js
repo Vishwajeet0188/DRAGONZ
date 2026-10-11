@@ -291,6 +291,7 @@ export const events = pgTable('events', {
   externalUrl: text('external_url'),
   status: eventStatusEnum('status').notNull().default('SCHEDULED'),
   organizerMemberId: uuid('organizer_member_id').references(() => members.id, { onDelete: 'set null' }),
+  hosts: jsonb('hosts').notNull().default([]), // [{ memberId, streamUrl }] — multiple co-hosts, each with their own stream
   createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   ...timestamps,
   deletedAt: ts('deleted_at'),

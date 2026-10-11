@@ -158,15 +158,30 @@ export function EventDetail() {
               <Button variant="secondary" size="sm" href={`/api/events/${e.slug}/ics`}><CalendarPlus className="h-4 w-4" /> .ics</Button>
               <Button variant="secondary" size="sm" href={googleCalendarUrl(e)}><CalendarDays className="h-4 w-4" /> Google</Button>
             </div>
-            {safeUrl(e.streamUrl) && <Button className="w-full" variant="outline" href={e.streamUrl}><Radio className="h-4 w-4" /> Watch stream</Button>}
+            {(() => {
+              const streams = (e.hosts ?? []).filter((h) => safeUrl(h.streamUrl));
+              if (!streams.length && safeUrl(e.streamUrl)) return <Button className="w-full" variant="outline" href={e.streamUrl}><Radio className="h-4 w-4" /> Watch stream</Button>;
+              return streams.map((h) => (
+                <Button key={h.member.slug} className="w-full" variant="outline" href={h.streamUrl}>
+                  <Radio className="h-4 w-4" /> Watch{streams.length > 1 ? ` ${h.member.displayName}` : ' stream'}
+                </Button>
+              ));
+            })()}
             {safeUrl(e.externalUrl) && <Button className="w-full" variant="ghost" href={e.externalUrl}><ExternalLink className="h-4 w-4" /> More info</Button>}
             <p className="flex items-center justify-center gap-1.5 pt-1 text-xs text-ink-400"><Users className="h-3.5 w-3.5" /> {e.stats.reminders} {e.stats.reminders === 1 ? 'person' : 'people'} reminded</p>
           </div>
-          {e.organizer && (
-            <Link to={`/members/${e.organizer.slug}`} className="card card-hover flex items-center gap-3 p-4">
-              <Avatar src={e.organizer.avatarUrl} name={e.organizer.displayName} accent={e.organizer.accentColor} size="sm" />
-              <div><p className="text-xs text-ink-400">Hosted by</p><p className="font-display text-lg font-bold text-ink-100">{e.organizer.displayName}</p></div>
-            </Link>
+          {(e.hosts?.length ? e.hosts.map((h) => h.member) : (e.organizer ? [e.organizer] : [])).length > 0 && (
+            <div className="card p-4">
+              <p className="mb-2 text-xs text-ink-400">{(e.hosts?.length ?? 0) > 1 ? 'Hosted by' : 'Hosted by'}</p>
+              <div className="space-y-2">
+                {(e.hosts?.length ? e.hosts.map((h) => h.member) : [e.organizer]).filter(Boolean).map((m) => (
+                  <Link key={m.slug} to={`/members/${m.slug}`} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-ink-800">
+                    <Avatar src={m.avatarUrl} name={m.displayName} accent={m.accentColor} size="sm" />
+                    <p className="font-display text-lg font-bold text-ink-100">{m.displayName}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </aside>
       </div>
