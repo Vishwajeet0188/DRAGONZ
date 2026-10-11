@@ -46,7 +46,15 @@ export async function listEvents({ when = 'upcoming', page, pageSize }) {
       .where(where).orderBy(when === 'past' ? desc(events.startsAt) : asc(events.startsAt)).limit(pg.limit).offset(pg.offset),
     db.select({ total: count() }).from(events).where(where),
   ]);
-  return { data: rows.map(({ event, organizer }) => ({ ...event, organizer: organizer?.id ? organizer : null })), meta: pageMeta(pg, total) };
+  const data = rows.map(({ event, organizer }) => ({ ...event, organizer: organizer?.id ? organizer : null }));
+  // Resolve hosts (member details) in one batched query so cards can list every host.
+  const ids = [...new Set(data.flatMap((e) => (Array.isArray(e.hosts) ? e.hosts : []).map((h) => h.memberId)).filter(Boolean))];
+  if (ids.length) {
+    const mrows = await db.select(organizerMini).from(members).where(inArray(members.id, ids));
+    const by = new Map(mrows.map((m) => [m.id, m]));
+    for (const e of data) e.hosts = (Array.isArray(e.hosts) ? e.hosts : []).map((h) => ({ member: by.get(h.memberId) ?? null, streamUrl: h.streamUrl || null })).filter((h) => h.member);
+  }
+  return { data, meta: pageMeta(pg, total) };
 }
 
 export async function getEvent(slug, viewerId) {
