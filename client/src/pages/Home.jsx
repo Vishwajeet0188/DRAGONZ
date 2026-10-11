@@ -143,18 +143,22 @@ function UpcomingEvents({ items }) {
             <Link to={`/events/${next.slug}`} className="inline-flex items-center gap-1 text-sm font-semibold text-dragon-300 hover:text-white">Details &amp; reminder <ArrowRight className="h-4 w-4" /></Link>
             {next.excerpt && <p className="mt-3 text-sm leading-relaxed text-ink-300">{next.excerpt.replace(/^#+\s*/gm, '').replace(/^[-*]\s+/gm, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*/g, '').replace(/\s*\n+\s*/g, ' ').trim()}</p>}
             {next.hosts?.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-400">
-                <span>Hosted by</span>
-                {next.hosts.map((h, i) => (
-                  <span key={h.slug ?? i} className="inline-flex items-center gap-1.5">
-                    <Link to={`/members/${h.slug}`} className="font-semibold text-ink-200 hover:text-white">{h.name}</Link>
-                    {safeUrl(h.streamUrl) && (
-                      <a href={h.streamUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-dragon-500/40 bg-dragon-500/10 px-2 py-0.5 font-semibold text-dragon-300 transition hover:bg-dragon-500/20 hover:text-white">
-                        <Radio className="h-3 w-3" aria-hidden="true" /> Watch now
-                      </a>
-                    )}
-                  </span>
-                ))}
+              <div className="mt-4 border-t border-ink-700/70 pt-4">
+                <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-500">Hosted by</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {next.hosts.map((h, i) => (
+                    <div key={h.slug ?? i} className="flex items-center gap-2 rounded-full border border-ink-600 bg-ink-800/70 py-1 pl-1 pr-1.5">
+                      <Avatar src={h.avatarUrl} name={h.name} accent={h.accentColor} className="!h-7 !w-7 !rounded-full" />
+                      <Link to={`/members/${h.slug}`} className="text-sm font-bold text-ink-100 hover:text-dragon-200">{h.name}</Link>
+                      {safeUrl(h.streamUrl) && (
+                        <a href={h.streamUrl} target="_blank" rel="noopener noreferrer"
+                          className="ml-0.5 inline-flex items-center gap-1.5 rounded-full bg-dragon-400 px-3 py-1 text-xs font-bold text-ink-950 shadow-[0_6px_16px_-6px_rgb(217_165_20/.7)] transition hover:bg-dragon-300">
+                          <Radio className="h-3.5 w-3.5" aria-hidden="true" /> Watch now
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

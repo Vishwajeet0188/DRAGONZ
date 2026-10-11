@@ -52,12 +52,12 @@ async function getHome() {
   const upHostIds = [...new Set(upcoming.flatMap((e) => (Array.isArray(e.hosts) ? e.hosts : []).map((h) => h.memberId)).concat(upcoming.map((e) => e.organizerMemberId)).filter(Boolean))];
   const upHostInfo = new Map();
   if (upHostIds.length) {
-    const hr = await db.select({ id: members.id, slug: members.slug, displayName: members.displayName }).from(members).where(inArray(members.id, upHostIds));
-    for (const m of hr) upHostInfo.set(m.id, { slug: m.slug, name: m.displayName });
+    const hr = await db.select({ id: members.id, slug: members.slug, displayName: members.displayName, avatarUrl: members.avatarUrl, accentColor: members.accentColor }).from(members).where(inArray(members.id, upHostIds));
+    for (const m of hr) upHostInfo.set(m.id, { slug: m.slug, name: m.displayName, avatarUrl: m.avatarUrl, accentColor: m.accentColor });
   }
   const upcomingEvents = upcoming.map(({ hosts, organizerMemberId, streamUrl, ...e }) => {
     const list = Array.isArray(hosts) && hosts.length ? hosts : (organizerMemberId ? [{ memberId: organizerMemberId, streamUrl }] : []);
-    return { ...e, hosts: list.map((h) => { const m = upHostInfo.get(h.memberId); return m ? { name: m.name, slug: m.slug, streamUrl: h.streamUrl || null } : null; }).filter(Boolean) };
+    return { ...e, hosts: list.map((h) => { const m = upHostInfo.get(h.memberId); return m ? { name: m.name, slug: m.slug, avatarUrl: m.avatarUrl, accentColor: m.accentColor, streamUrl: h.streamUrl || null } : null; }).filter(Boolean) };
   });
 
   const [hydratedFeatured, crew] = await Promise.all([
