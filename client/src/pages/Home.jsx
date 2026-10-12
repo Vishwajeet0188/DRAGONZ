@@ -193,20 +193,41 @@ function UpcomingEvents({ items }) {
 function Achievements({ items }) {
   if (!items.length) return null;
   return (
-    <Section>
-      <SectionHeader eyebrow="Written in history" title="Dragonz achievements" to="/hall-of-fame" linkLabel="Hall of Fame" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((a) => (
-          <article key={a.id} className="card relative overflow-hidden p-5">
-            <Trophy className="absolute -right-3 -top-3 h-20 w-20 text-ember-500/10" aria-hidden="true" />
-            <Badge tone="ember">{titleCase(a.category)}</Badge>
-            <h3 className="mt-3 text-lg font-bold leading-snug">{a.title}</h3>
-            {a.description && <p className="mt-2 line-clamp-3 text-sm text-ink-300">{a.description}</p>}
-            <p className="mt-3 text-xs text-ink-500">{formatDate(a.achievedAt)}</p>
-          </article>
-        ))}
+    <section className="relative overflow-hidden py-14 sm:py-20">
+      <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_50%_0%,rgb(217_165_20/.10),transparent_62%),linear-gradient(180deg,#131019,#0a0a0d)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-dragon-500/50 to-transparent" aria-hidden="true" />
+      <div className="container-page relative">
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow mb-2 flex items-center gap-2"><Trophy className="h-4 w-4" /> Written in history</p>
+            <h2 className="font-display text-4xl font-bold uppercase leading-none sm:text-5xl">Dragonz <span className="text-dragon-300">achievements</span></h2>
+          </div>
+          <Link to="/hall-of-fame" className="group inline-flex items-center gap-1.5 rounded-xl border border-ink-600 px-4 py-2 text-sm font-semibold text-ink-200 transition hover:border-dragon-500 hover:text-white">Hall of Fame <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((a) => (
+            <article key={a.id} className="group card relative flex flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:border-dragon-500/40 hover:shadow-[0_24px_60px_-28px_rgb(217_165_20/.5)]">
+              <div className="relative aspect-[16/10] overflow-hidden">
+                {safeUrl(a.imageUrl) ? (
+                  <img src={a.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-[radial-gradient(70%_100%_at_50%_0%,rgb(217_165_20/.22),transparent_65%),linear-gradient(160deg,#1a160b,#0e0e10)]" aria-hidden="true">
+                    <Trophy className="h-12 w-12 text-dragon-400/50" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/15 to-transparent" aria-hidden="true" />
+                <span className="absolute left-3 top-3"><Badge tone="ember">{titleCase(a.category)}</Badge></span>
+              </div>
+              <div className="flex flex-1 flex-col p-4">
+                <h3 className="font-display text-lg font-bold leading-snug text-ink-100 group-hover:text-white">{a.title}</h3>
+                {a.description && <p className="mt-1.5 line-clamp-2 text-sm text-ink-400">{a.description}</p>}
+                <p className="mt-auto pt-3 text-xs font-semibold uppercase tracking-wider text-ink-500">{formatDate(a.achievedAt)}</p>
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
-    </Section>
+    </section>
   );
 }
 
@@ -214,21 +235,28 @@ function Milestones({ items }) {
   if (!items.length) return null;
   return (
     <Section>
-      <SectionHeader eyebrow="Growing together" title="Creator milestones" />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-8">
+        <p className="eyebrow mb-2 flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Growing together</p>
+        <h2 className="font-display text-4xl font-bold uppercase leading-none sm:text-5xl">Creator <span className="text-dragon-300">milestones</span></h2>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((m) => {
           const meta = PLATFORM_META[m.platform];
+          const accent = m.member.accentColor ?? '#d9a514';
           return (
-            <Link key={m.id} to={`/members/${m.member.slug}`} className="card card-hover flex items-center gap-4 p-4">
-              <Avatar src={m.member.avatarUrl} name={m.member.displayName} accent={m.member.accentColor} size="md" />
-              <div className="min-w-0">
+            <Link key={m.id} to={`/members/${m.member.slug}`} className="group card card-hover relative flex items-center gap-4 overflow-hidden p-4 pl-5">
+              <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: `linear-gradient(180deg, ${accent}, transparent)` }} aria-hidden="true" />
+              <Avatar src={m.member.avatarUrl} name={m.member.displayName} accent={accent} size="md" ring />
+              <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-xs text-ink-400">
-                  {meta && <meta.Icon className="h-3 w-3" style={{ color: meta.color }} aria-hidden="true" />}
-                  {m.member.displayName} · {timeAgo(m.achievedAt)}
+                  {meta && <meta.Icon className="h-3.5 w-3.5" style={{ color: meta.color }} aria-hidden="true" />}
+                  <span className="font-semibold text-ink-300">{m.member.displayName}</span> · {timeAgo(m.achievedAt)}
                 </p>
-                <p className="font-display text-lg font-bold leading-tight text-ink-100">{m.title}</p>
+                <p className="mt-0.5 line-clamp-2 font-display text-base font-bold leading-tight text-ink-100 group-hover:text-white">{m.title}</p>
               </div>
-              {m.value ? <span className="ml-auto font-display text-2xl font-bold text-dragon-400">{compact(m.value)}</span> : <TrendingUp className="ml-auto h-5 w-5 text-dragon-400" />}
+              {m.value
+                ? <span className="ml-auto shrink-0 rounded-xl border border-dragon-500/30 bg-dragon-500/10 px-3 py-1.5 font-display text-xl font-bold text-dragon-300">{compact(m.value)}</span>
+                : <TrendingUp className="ml-auto h-5 w-5 shrink-0 text-dragon-400" />}
             </Link>
           );
         })}
