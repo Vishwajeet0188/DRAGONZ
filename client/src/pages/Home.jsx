@@ -244,19 +244,25 @@ function Milestones({ items }) {
           const meta = PLATFORM_META[m.platform];
           const accent = m.member.accentColor ?? '#d9a514';
           return (
-            <Link key={m.id} to={`/members/${m.member.slug}`} className="group card card-hover relative flex items-center gap-4 overflow-hidden p-4 pl-5">
-              <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: `linear-gradient(180deg, ${accent}, transparent)` }} aria-hidden="true" />
-              <Avatar src={m.member.avatarUrl} name={m.member.displayName} accent={accent} size="md" ring />
-              <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-xs text-ink-400">
-                  {meta && <meta.Icon className="h-3.5 w-3.5" style={{ color: meta.color }} aria-hidden="true" />}
-                  <span className="font-semibold text-ink-300">{m.member.displayName}</span> · {timeAgo(m.achievedAt)}
-                </p>
-                <p className="mt-0.5 line-clamp-2 font-display text-base font-bold leading-tight text-ink-100 group-hover:text-white">{m.title}</p>
+            <Link key={m.id} to={`/members/${m.member.slug}`}
+              className="group card relative flex flex-col gap-3.5 overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:border-dragon-500/40 hover:shadow-[0_24px_60px_-30px_rgb(217_165_20/.5)]">
+              <span className="absolute inset-x-0 top-0 h-0.5" style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }} aria-hidden="true" />
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-20 blur-2xl" style={{ background: accent }} aria-hidden="true" />
+              <div className="relative flex items-center gap-3">
+                <Avatar src={m.member.avatarUrl} name={m.member.displayName} accent={accent} size="md" ring />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display text-lg font-bold leading-tight text-ink-100 group-hover:text-white">{m.member.displayName}</p>
+                  <p className="flex items-center gap-1.5 text-xs text-ink-400">
+                    {meta && <meta.Icon className="h-3.5 w-3.5" style={{ color: meta.color }} aria-hidden="true" />}
+                    {meta?.label ?? 'Milestone'} · {timeAgo(m.achievedAt)}
+                  </p>
+                </div>
+                {m.value && <span className="shrink-0 font-display text-3xl font-bold leading-none text-dragon-300 drop-shadow-[0_2px_10px_rgb(217_165_20/.35)]">{compact(m.value)}</span>}
               </div>
-              {m.value
-                ? <span className="ml-auto shrink-0 rounded-xl border border-dragon-500/30 bg-dragon-500/10 px-3 py-1.5 font-display text-xl font-bold text-dragon-300">{compact(m.value)}</span>
-                : <TrendingUp className="ml-auto h-5 w-5 shrink-0 text-dragon-400" />}
+              <div className="relative flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/50 px-3 py-2.5">
+                <Sparkles className="h-4 w-4 shrink-0 text-dragon-400" aria-hidden="true" />
+                <p className="line-clamp-2 text-sm font-medium text-ink-200">{m.title}</p>
+              </div>
             </Link>
           );
         })}
