@@ -6,6 +6,7 @@ import { compact, formatDate, safeUrl, titleCase } from '../lib/format.js';
 import { PLATFORM_META } from '../lib/platforms.js';
 import { usePageTitle } from '../lib/usePageTitle.js';
 import { Avatar } from '../components/ui/Avatar.jsx';
+import { BrandMark } from '../components/ui/Logo.jsx';
 import { Badge } from '../components/ui/Bits.jsx';
 import { EmptyState, ErrorState, Skeleton } from '../components/ui/States.jsx';
 
@@ -21,7 +22,11 @@ export default function HallOfFame() {
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[460px] bg-[radial-gradient(60%_100%_at_50%_0%,rgb(217_165_20/.14),transparent_60%),linear-gradient(180deg,#151019,transparent)]" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-[radial-gradient(70%_100%_at_50%_0%,rgb(217_165_20/.16),transparent_62%),linear-gradient(180deg,#161019,transparent)]" />
+        <BrandMark className="absolute left-1/2 top-[-60px] h-[520px] w-[520px] -translate-x-1/2 opacity-[0.06] blur-[1px]" imgClassName="h-full w-full object-contain" eager />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-dragon-500/40 to-transparent" />
+      </div>
       <div className="container-page relative py-12">
       <header className="mb-12 text-center">
         <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-dragon-500/40 bg-ink-900/70 shadow-[0_0_40px_-10px_rgb(217_165_20/.6)]"><Crown className="h-7 w-7 text-dragon-300" aria-hidden="true" /></span>
@@ -46,11 +51,12 @@ export default function HallOfFame() {
                             <span className="absolute -left-[41px] top-5 h-4 w-4 rounded-full border-2 border-dragon-400 bg-ink-900 shadow-[0_0_12px_rgb(255_202_40/.5)]" aria-hidden="true" />
                             <article className={`group card overflow-hidden transition duration-300 hover:border-dragon-500/40 ${a.isFeatured ? 'border-dragon-500/40 shadow-[0_28px_80px_-40px_rgb(217_165_20/.55)]' : ''}`}>
                               {safeUrl(a.imageUrl) && a.isFeatured ? (
-                                <div className="relative">
-                                  <img src={a.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="aspect-[16/10] w-full object-cover object-center sm:aspect-[16/8]" />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/55 to-transparent" aria-hidden="true" />
-                                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-lg bg-dragon-400 px-2 py-0.5 font-display text-[11px] font-bold uppercase tracking-wider text-ink-950"><Crown className="h-3 w-3" /> Featured</span>
-                                  <div className="absolute inset-x-0 bottom-0 p-5">
+                                <div className="relative aspect-[16/10] overflow-hidden bg-ink-950">
+                                  <img src={a.imageUrl} alt="" aria-hidden="true" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
+                                  <img src={a.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="relative z-10 mx-auto h-full w-full object-contain" />
+                                  <div className="absolute inset-0 z-20 bg-gradient-to-t from-ink-950 via-ink-950/35 to-transparent" aria-hidden="true" />
+                                  <span className="absolute right-3 top-3 z-30 inline-flex items-center gap-1 rounded-lg bg-dragon-400 px-2 py-0.5 font-display text-[11px] font-bold uppercase tracking-wider text-ink-950"><Crown className="h-3 w-3" /> Featured</span>
+                                  <div className="absolute inset-x-0 bottom-0 z-30 p-5">
                                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-300">
                                       <Badge tone="ember">{titleCase(a.category)}</Badge>
                                       <time dateTime={a.achievedAt}>{formatDate(a.achievedAt)}</time>
@@ -59,7 +65,12 @@ export default function HallOfFame() {
                                   </div>
                                 </div>
                               ) : (
-                                safeUrl(a.imageUrl) && <img src={a.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="aspect-[16/9] w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]" />
+                                safeUrl(a.imageUrl) && (
+                                  <div className="relative aspect-video overflow-hidden bg-ink-950">
+                                    <img src={a.imageUrl} alt="" aria-hidden="true" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl" />
+                                    <img src={a.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="relative z-10 mx-auto h-full object-contain" />
+                                  </div>
+                                )
                               )}
                               <div className="p-5">
                                 {!(safeUrl(a.imageUrl) && a.isFeatured) && (

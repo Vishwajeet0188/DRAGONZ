@@ -199,8 +199,8 @@ function Achievements({ items }) {
       <div className="container-page relative">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow mb-2 flex items-center gap-2"><Trophy className="h-4 w-4" /> Written in history</p>
-            <h2 className="font-display text-4xl font-bold uppercase leading-none sm:text-5xl">Dragonz <span className="text-dragon-300">achievements</span></h2>
+            <p className="mb-2 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-[0.2em] text-dragon-400"><Trophy className="h-5 w-5" /> Written in history</p>
+            <h2 className="font-display text-5xl font-bold uppercase leading-[0.95] sm:text-6xl">Dragonz <span className="text-dragon-300">achievements</span></h2>
           </div>
           <Link to="/hall-of-fame" className="group inline-flex items-center gap-1.5 rounded-xl border border-ink-600 px-4 py-2 text-sm font-semibold text-ink-200 transition hover:border-dragon-500 hover:text-white">Hall of Fame <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" /></Link>
         </div>
@@ -236,8 +236,8 @@ function Milestones({ items }) {
   return (
     <Section>
       <div className="mb-8">
-        <p className="eyebrow mb-2 flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Growing together</p>
-        <h2 className="font-display text-4xl font-bold uppercase leading-none sm:text-5xl">Creator <span className="text-dragon-300">milestones</span></h2>
+        <p className="mb-2 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-[0.2em] text-dragon-400"><TrendingUp className="h-5 w-5" /> Growing together</p>
+        <h2 className="font-display text-5xl font-bold uppercase leading-[0.95] sm:text-6xl">Creator <span className="text-dragon-300">milestones</span></h2>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((m) => {
