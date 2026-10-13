@@ -20,7 +20,7 @@ export const hallOfFameRouter = Router();
 hallOfFameRouter.get('/', async (_req, res) => {
   const [ach, ms] = await Promise.all([
     db.select({ achievement: achievements, member: memberMini }).from(achievements).leftJoin(members, eq(members.id, achievements.memberId))
-      .where(eq(achievements.inHallOfFame, true)).orderBy(desc(achievements.achievedAt)).limit(200),
+      .where(eq(achievements.inHallOfFame, true)).orderBy(achievements.sortOrder, desc(achievements.achievedAt)).limit(200),
     db.select({ milestone: milestones, member: memberMini }).from(milestones).innerJoin(members, eq(members.id, milestones.memberId))
       .where(isNull(members.deletedAt)).orderBy(desc(milestones.isFeatured), desc(milestones.achievedAt)).limit(24),
   ]);
@@ -37,6 +37,7 @@ const achievementBody = z.object({
   achievedAt: z.coerce.date(),
   imageUrl: optionalMediaUrl,
   memberId,
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
   isFeatured: z.boolean().default(false),
   inHallOfFame: z.boolean().default(true),
 }).strict();
@@ -50,10 +51,10 @@ const milestoneBody = z.object({
   isFeatured: z.boolean().default(false),
 }).strict();
 
-function crud(router, table, body, name, perm) {
+function crud(router, table, body, name, perm, order) {
   router.get(`/${name}`, requirePermission(perm), async (_req, res) => {
     const rows = await db.select({ item: table, member: memberMini }).from(table).leftJoin(members, eq(members.id, table.memberId))
-      .orderBy(desc(table.achievedAt)).limit(500);
+      .orderBy(...(order ?? [desc(table.achievedAt)])).limit(500);
     res.json({ data: withMember(rows, 'item') });
   });
   router.post(`/${name}`, requirePermission(perm), validate({ body }), async (req, res) => {
@@ -76,6 +77,6 @@ function crud(router, table, body, name, perm) {
 }
 
 export const achievementsAdminRouter = Router();
-crud(achievementsAdminRouter, achievements, achievementBody, 'achievements', P.ACHIEVEMENTS_MANAGE);
+crud(achievementsAdminRouter, achievements, achievementBody, 'achievements', P.ACHIEVEMENTS_MANAGE, [achievements.sortOrder, desc(achievements.achievedAt)]);
 crud(achievementsAdminRouter, milestones, milestoneBody, 'milestones', P.ACHIEVEMENTS_MANAGE);
 

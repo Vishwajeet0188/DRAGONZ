@@ -319,6 +319,7 @@ export const achievements = pgTable('achievements', {
   achievedAt: ts('achieved_at').notNull(),
   imageUrl: text('image_url'),
   memberId: uuid('member_id').references(() => members.id, { onDelete: 'set null' }),
+  sortOrder: integer('sort_order').notNull().default(0), // lower = shown first (Founder, Leader, ...)
   isFeatured: boolean('is_featured').notNull().default(false),
   inHallOfFame: boolean('in_hall_of_fame').notNull().default(true),
   ...timestamps,

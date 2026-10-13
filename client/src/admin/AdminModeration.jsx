@@ -274,7 +274,7 @@ export function AdminSupporters() {
 }
 
 // ── Hall of Fame ─────────────────────────────────────────────────────────
-const ACH_EMPTY = { title: '', description: '', category: 'TOURNAMENT', achievedAt: '', imageUrl: '', memberId: '', isFeatured: false, inHallOfFame: true };
+const ACH_EMPTY = { title: '', description: '', category: 'TOURNAMENT', achievedAt: '', imageUrl: '', memberId: '', sortOrder: 0, isFeatured: false, inHallOfFame: true };
 const MS_EMPTY = { memberId: '', platform: 'YOUTUBE', type: 'SUBSCRIBERS', value: '', title: '', achievedAt: '', isFeatured: false };
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
 
@@ -291,7 +291,7 @@ function HofForm({ kind, initial, onDone }) {
     e.preventDefault(); setBusy(true); setErrors({}); setMsg(null);
     const body = isMs
       ? { memberId: f.memberId, platform: f.platform, type: f.type, value: f.value === '' ? null : Number(String(f.value).replace(/[, ]/g, '')), title: f.title, achievedAt: f.achievedAt, isFeatured: f.isFeatured }
-      : { title: f.title, description: f.description, category: f.category, achievedAt: f.achievedAt, imageUrl: f.imageUrl, memberId: f.memberId, isFeatured: f.isFeatured, inHallOfFame: f.inHallOfFame };
+      : { title: f.title, description: f.description, category: f.category, achievedAt: f.achievedAt, imageUrl: f.imageUrl, memberId: f.memberId, sortOrder: f.sortOrder === '' ? 0 : Number(f.sortOrder), isFeatured: f.isFeatured, inHallOfFame: f.inHallOfFame };
     try {
       if (initial) await api.patch(`/admin/${kind}/${initial.id}`, body); else await api.post(`/admin/${kind}`, body);
       qc.invalidateQueries({ queryKey: ['admin', kind] }); qc.invalidateQueries({ queryKey: ['hall-of-fame'] });
@@ -318,7 +318,8 @@ function HofForm({ kind, initial, onDone }) {
           <Field as="select" label="Category *" {...bind('category')}>{['TOURNAMENT', 'EVENT', 'MILESTONE', 'MOMENT', 'HISTORY'].map((c) => <option key={c} value={c}>{titleCase(c)}</option>)}</Field>
           <Field label="Date *" type="date" {...bind('achievedAt')} />
           <MemberSelect label="Member (optional)" value={f.memberId} onChange={(v) => setF({ ...f, memberId: v })} error={errors.memberId} />
-          <div className="flex flex-col justify-end gap-2">{check('inHallOfFame', 'Show in Hall of Fame')}{check('isFeatured', 'Featured (gold border)')}</div>
+          <Field label="Display order" type="number" min="0" max="9999" {...bind('sortOrder')} hint="Lower = shown first (Founder 1, Leader 2, …)" />
+          <div className="flex flex-col justify-end gap-2 sm:col-span-2">{check('inHallOfFame', 'Show in Hall of Fame')}{check('isFeatured', 'Featured (gold border)')}</div>
           <Field as="textarea" label="Story" rows={4} maxLength={3000} className="sm:col-span-2" {...bind('description')} />
           <div className="sm:col-span-2"><ImageField label="Image" kind="achievement" value={f.imageUrl} onChange={(v) => setF({ ...f, imageUrl: v })} error={errors.imageUrl} /></div>
         </div>

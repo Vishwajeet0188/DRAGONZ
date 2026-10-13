@@ -38,7 +38,7 @@ async function getHome() {
     db.select({ id: events.id, slug: events.slug, title: events.title, category: events.category, startsAt: events.startsAt, bannerUrl: events.bannerUrl, status: events.status, excerpt: sql`left(${events.description}, 160)`, hosts: events.hosts, organizerMemberId: events.organizerMemberId, streamUrl: events.streamUrl })
       .from(events).where(and(inArray(events.status, ['SCHEDULED', 'LIVE']), gte(events.startsAt, new Date(Date.now() - 6 * 3600_000)), isNull(events.deletedAt)))
       .orderBy(asc(events.startsAt)).limit(4),
-    db.select().from(achievements).where(eq(achievements.isFeatured, true)).orderBy(desc(achievements.achievedAt)).limit(4),
+    db.select().from(achievements).where(eq(achievements.isFeatured, true)).orderBy(achievements.sortOrder, desc(achievements.achievedAt)).limit(4),
     db.select({ milestone: milestones, member: memberMini }).from(milestones)
       .innerJoin(members, eq(members.id, milestones.memberId))
       .where(activeMember).orderBy(desc(milestones.isFeatured), desc(milestones.achievedAt)).limit(6),
