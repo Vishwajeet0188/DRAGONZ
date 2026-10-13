@@ -57,6 +57,13 @@
       "when": 1791801394386,
       "tag": "0007_achievement_order",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791865263173,
+      "tag": "0008_sort_orders",
+      "breakpoints": true
     }
   ]
 }

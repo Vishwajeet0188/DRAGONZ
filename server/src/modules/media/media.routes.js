@@ -1,7 +1,7 @@
 // Public Live Hub + Video Hub endpoints.
 import { Router } from 'express';
 import { z } from 'zod';
-import { and, count, desc, eq, gte, ilike, isNull, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, ilike, isNull, inArray, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { validate } from '../../middleware/validate.js';
 import { escapeLike, pageMeta, paginate } from '../../lib/util.js';
@@ -66,7 +66,7 @@ videosRouter.get('/', validate({ query: videosQuery }), async (req, res) => {
   if (featured) filters.push(eq(videos.isFeatured, true));
   const where = and(...filters);
   // "Latest" (default): admin-starred videos first, then newest. "Most viewed" is purely by views.
-  const order = sort === 'popular' ? [desc(videos.viewCount), desc(videos.publishedAt)] : [desc(videos.isFeatured), desc(videos.publishedAt)];
+  const order = sort === 'popular' ? [desc(videos.viewCount), desc(videos.publishedAt)] : [desc(videos.isFeatured), asc(videos.sortOrder), desc(videos.publishedAt)];
 
   const [rows, [{ total }]] = await Promise.all([
     db.select({ video: videos, member: memberMini }).from(videos).innerJoin(members, eq(members.id, videos.memberId))
@@ -100,7 +100,8 @@ const videoBody = z.object({
   isFeatured: z.boolean().default(false),
   isHidden: z.boolean().default(false),
 }).strict().refine((v) => isPlatformUrl(v.platform, v.url), { message: 'URL must be an https link on the platform’s official domain', path: ['url'] });
-const flagsBody = z.object({ isFeatured: z.boolean().optional(), isHidden: z.boolean().optional() }).strict();
+const flagsBody = z.object({ isFeatured: z.boolean().optional(), isHidden: z.boolean().optional(), sortOrder: z.coerce.number().int().min(0).max(9999).optional() }).strict();
+const nextSortOrder = async (table) => ((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max ?? 0) + 1;
 const idParam = z.object({ id: z.string().uuid() });
 
 export const videosAdminRouter = Router();
@@ -129,7 +130,7 @@ videosAdminRouter.post('/', validate({ body: videoBody }), async (req, res) => {
     const yt = /(?:v=|youtu\.be\/|shorts\/|live\/|embed\/)([A-Za-z0-9_-]{11})/.exec(body.url)?.[1];
     if (yt) body.thumbnailUrl = `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`; // YouTube's public thumbnail
   }
-  const [row] = await db.insert(videos).values({ ...body, source: 'MANUAL' }).returning();
+  const [row] = await db.insert(videos).values({ ...body, source: 'MANUAL', sortOrder: await nextSortOrder(videos) }).returning();
   await audit(req.user.id, 'video.create', 'video', row.id, { title: row.title });
   res.status(201).json({ data: row });
 });

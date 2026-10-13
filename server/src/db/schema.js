@@ -150,6 +150,7 @@ export const videos = pgTable('videos', {
   viewCount: integer('view_count'),
   publishedAt: ts('published_at').notNull(),
   isFeatured: boolean('is_featured').notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0), // lower = shown first among featured; new ones append to the end
   isHidden: boolean('is_hidden').notNull().default(false), // admins can hide synced videos (sync never un-hides)
   // Deleted by an admin. Row is kept as a tombstone so the sync never re-imports it; invisible everywhere.
   deletedAt: ts('deleted_at'),
@@ -193,6 +194,7 @@ export const milestones = pgTable('milestones', {
   title: varchar('title', { length: 120 }).notNull(),
   achievedAt: ts('achieved_at').notNull(),
   isFeatured: boolean('is_featured').notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0), // 0 = natural (newest first); set a value to float it up
   ...timestamps,
 }, (t) => [
   index('milestones_member_idx').on(t.memberId),
@@ -269,6 +271,8 @@ export const newsPosts = pgTable('news_posts', {
   category: newsCategoryEnum('category').notNull().default('ANNOUNCEMENT'),
   status: publishStatusEnum('status').notNull().default('DRAFT'),
   isPinned: boolean('is_pinned').notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0), // 0 = natural (newest first); set a value to float it up
+
   publishedAt: ts('published_at'),
   authorId: uuid('author_id').references(() => users.id, { onDelete: 'set null' }),
   ...timestamps,
@@ -338,6 +342,7 @@ export const communitySubmissions = pgTable('community_submissions', {
   description: varchar('description', { length: 1000 }),
   externalUrl: text('external_url'),
   status: submissionStatusEnum('status').notNull().default('PENDING'),
+  sortOrder: integer('sort_order').notNull().default(0), // lower = shown first; new ones append to the end
   rejectionReason: varchar('rejection_reason', { length: 300 }),
   moderatedById: uuid('moderated_by_id').references(() => users.id, { onDelete: 'set null' }),
   moderatedAt: ts('moderated_at'),

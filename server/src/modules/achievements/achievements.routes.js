@@ -1,7 +1,7 @@
 // Hall of Fame (public), achievements + creator milestones (admin).
 import { Router } from 'express';
 import { z } from 'zod';
-import { desc, eq, isNull } from 'drizzle-orm';
+import { asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { validate } from '../../middleware/validate.js';
 import { requirePermission } from '../../middleware/session.js';
@@ -22,7 +22,7 @@ hallOfFameRouter.get('/', async (_req, res) => {
     db.select({ achievement: achievements, member: memberMini }).from(achievements).leftJoin(members, eq(members.id, achievements.memberId))
       .where(eq(achievements.inHallOfFame, true)).orderBy(achievements.sortOrder, desc(achievements.achievedAt)).limit(200),
     db.select({ milestone: milestones, member: memberMini }).from(milestones).innerJoin(members, eq(members.id, milestones.memberId))
-      .where(isNull(members.deletedAt)).orderBy(desc(milestones.isFeatured), desc(milestones.achievedAt)).limit(24),
+      .where(isNull(members.deletedAt)).orderBy(desc(milestones.isFeatured), sql`(${milestones.sortOrder} = 0)`, asc(milestones.sortOrder), desc(milestones.achievedAt)).limit(24),
   ]);
   res.set('Cache-Control', 'public, max-age=120');
   res.json({ data: { achievements: withMember(ach, 'achievement'), milestones: withMember(ms, 'milestone') } });
@@ -49,16 +49,21 @@ const milestoneBody = z.object({
   title: z.string().trim().min(3).max(120),
   achievedAt: z.coerce.date(),
   isFeatured: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
 }).strict();
 
-function crud(router, table, body, name, perm, order) {
+function crud(router, table, body, name, perm, order, appendSort = false) {
   router.get(`/${name}`, requirePermission(perm), async (_req, res) => {
     const rows = await db.select({ item: table, member: memberMini }).from(table).leftJoin(members, eq(members.id, table.memberId))
       .orderBy(...(order ?? [desc(table.achievedAt)])).limit(500);
     res.json({ data: withMember(rows, 'item') });
   });
   router.post(`/${name}`, requirePermission(perm), validate({ body }), async (req, res) => {
-    const [row] = await db.insert(table).values(req.body).returning();
+    // Curated lists append new entries to the end unless the admin typed a Display order.
+    const values = (appendSort && req.body.sortOrder == null)
+      ? { ...req.body, sortOrder: (((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max ?? 0) + 1) }
+      : req.body;
+    const [row] = await db.insert(table).values(values).returning();
     await audit(req.user.id, `${name}.create`, name, row.id, { title: row.title });
     res.status(201).json({ data: row });
   });
@@ -77,6 +82,6 @@ function crud(router, table, body, name, perm, order) {
 }
 
 export const achievementsAdminRouter = Router();
-crud(achievementsAdminRouter, achievements, achievementBody, 'achievements', P.ACHIEVEMENTS_MANAGE, [achievements.sortOrder, desc(achievements.achievedAt)]);
-crud(achievementsAdminRouter, milestones, milestoneBody, 'milestones', P.ACHIEVEMENTS_MANAGE);
+crud(achievementsAdminRouter, achievements, achievementBody, 'achievements', P.ACHIEVEMENTS_MANAGE, [achievements.sortOrder, desc(achievements.achievedAt)], true);
+crud(achievementsAdminRouter, milestones, milestoneBody, 'milestones', P.ACHIEVEMENTS_MANAGE, [sql`(${milestones.sortOrder} = 0)`, asc(milestones.sortOrder), desc(milestones.achievedAt)]);
 

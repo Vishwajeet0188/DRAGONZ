@@ -54,6 +54,7 @@ communityAdminRouter.get('/', validate({ query: z.object({
 communityAdminRouter.patch('/:id', validate({ params: idParam, body: z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'FEATURED', 'PENDING']),
   rejectionReason: z.string().trim().max(300).optional(),
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
 }).strict() }), async (req, res) => res.json({ data: await svc.moderate(req.user, req.params.id, req.body) }));
 communityAdminRouter.delete('/:id', validate({ params: idParam }), async (req, res) => {
   await svc.adminDelete(req.user, req.params.id);

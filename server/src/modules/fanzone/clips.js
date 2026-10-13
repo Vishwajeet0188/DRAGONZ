@@ -43,7 +43,7 @@ async function candidates() {
   const rows = await db.select(cols).from(subs).innerJoin(users, eq(users.id, subs.authorId)).leftJoin(members, eq(members.id, subs.featuredMemberId))
     .where(and(inArray(subs.status, ['APPROVED', 'FEATURED']), isNull(subs.deletedAt), inArray(subs.type, CLIP_TYPES),
       gte(subs.createdAt, new Date(Date.now() - WINDOW_DAYS * 86_400_000)), exclude.length ? notInArray(subs.id, exclude) : undefined))
-    .orderBy(desc(subs.createdAt)).limit(24);
+    .orderBy(desc(sql`(${subs.status} = 'FEATURED')`), asc(subs.sortOrder), desc(subs.createdAt)).limit(24);
   return attachMedia(rows);
 }
 

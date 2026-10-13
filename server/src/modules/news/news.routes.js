@@ -2,7 +2,7 @@
 // (no raw HTML), so stored content can never inject scripts.
 import { Router } from 'express';
 import { z } from 'zod';
-import { and, count, desc, eq, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { validate } from '../../middleware/validate.js';
 import { requirePermission } from '../../middleware/session.js';
@@ -16,8 +16,10 @@ const { newsPosts, users } = schema;
 const CATEGORIES = ['ANNOUNCEMENT', 'RECRUITMENT', 'COMMUNITY', 'NOTICE'];
 const listColumns = {
   id: newsPosts.id, slug: newsPosts.slug, title: newsPosts.title, excerpt: newsPosts.excerpt, category: newsPosts.category,
-  featuredImageUrl: newsPosts.featuredImageUrl, isPinned: newsPosts.isPinned, publishedAt: newsPosts.publishedAt, status: newsPosts.status,
+  featuredImageUrl: newsPosts.featuredImageUrl, isPinned: newsPosts.isPinned, sortOrder: newsPosts.sortOrder, publishedAt: newsPosts.publishedAt, status: newsPosts.status,
 };
+// Pinned first, then any post given an explicit Display order (lower first), then newest.
+const publicOrder = [desc(newsPosts.isPinned), sql`(${newsPosts.sortOrder} = 0)`, asc(newsPosts.sortOrder), desc(newsPosts.publishedAt)];
 const published = and(eq(newsPosts.status, 'PUBLISHED'), isNull(newsPosts.deletedAt));
 
 export const newsRouter = Router();
@@ -30,7 +32,7 @@ newsRouter.get('/', validate({ query: z.object({
   const pg = paginate(p);
   const where = category ? and(published, eq(newsPosts.category, category)) : published;
   const [rows, [{ total }]] = await Promise.all([
-    db.select(listColumns).from(newsPosts).where(where).orderBy(desc(newsPosts.isPinned), desc(newsPosts.publishedAt)).limit(pg.limit).offset(pg.offset),
+    db.select(listColumns).from(newsPosts).where(where).orderBy(...publicOrder).limit(pg.limit).offset(pg.offset),
     db.select({ total: count() }).from(newsPosts).where(where),
   ]);
   res.set('Cache-Control', 'public, max-age=60');
@@ -57,6 +59,7 @@ const postBody = z.object({
   category: z.enum(CATEGORIES).default('ANNOUNCEMENT'),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
   isPinned: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
 }).strict();
 const idParam = z.object({ id: z.string().uuid() });
 

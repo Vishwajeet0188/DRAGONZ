@@ -10,6 +10,7 @@ import { SearchPalette } from '../search/Search.jsx';
 import { useSiteSettings } from '../../lib/site.js';
 import { safeUrl } from '../../lib/format.js';
 import { CheckInToast } from '../fanzone/FanZone.jsx';
+import { PageBackground } from '../ui/PageBackground.jsx';
 
 const NAV = [
   { to: '/members', label: 'Members' },
@@ -185,6 +186,7 @@ function SiteBanner() {
 export function SiteLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
+      <PageBackground />
       <SiteBanner />
       <Header />
       <main id="main" className="flex-1">

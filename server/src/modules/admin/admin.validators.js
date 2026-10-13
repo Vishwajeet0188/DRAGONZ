@@ -9,7 +9,8 @@ export const memberBody = z.object({
   displayName: z.string().trim().min(2).max(60),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase letters, numbers and dashes').max(80).optional(),
   rank: z.string().trim().min(2).max(40),
-  rankOrder: z.coerce.number().int().min(0).max(1000).default(100),
+  // Blank → append to the end of the roster (computed in createMember). A number sets the exact position.
+  rankOrder: z.preprocess((v) => (v === '' || v == null ? undefined : v), z.coerce.number().int().min(0).max(1000).optional()),
   rpCharacter: optionalText(80),
   tagline: optionalText(140),
   bio: optionalText(5000),

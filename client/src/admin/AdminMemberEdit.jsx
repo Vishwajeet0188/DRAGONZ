@@ -11,7 +11,7 @@ import { ErrorState, PageLoader } from '../components/ui/States.jsx';
 import { AdminHeader } from './ui.jsx';
 
 const EMPTY = {
-  displayName: '', slug: '', rank: 'Soldier', rankOrder: 5, rpCharacter: '', tagline: '', bio: '', avatarUrl: '', bannerUrl: '',
+  displayName: '', slug: '', rank: 'Soldier', rankOrder: '', rpCharacter: '', tagline: '', bio: '', avatarUrl: '', bannerUrl: '',
   accentColor: '#d9a514', isCreator: false, isFeatured: false, status: 'ACTIVE', joinedAt: '', birthMonth: '', birthDay: '',
 };
 
@@ -22,7 +22,7 @@ const toForm = (m) => ({
 });
 
 function toPayload(f, isNew) {
-  const out = { ...f, rankOrder: Number(f.rankOrder), joinedAt: f.joinedAt ? new Date(f.joinedAt).toISOString() : null,
+  const out = { ...f, rankOrder: f.rankOrder === '' ? undefined : Number(f.rankOrder), joinedAt: f.joinedAt ? new Date(f.joinedAt).toISOString() : null,
     birthMonth: f.birthMonth ? Number(f.birthMonth) : null, birthDay: f.birthDay ? Number(f.birthDay) : null };
   if (!out.slug) delete out.slug; // server generates one for new members; unchanged for edits
   for (const k of ['rpCharacter', 'tagline', 'bio', 'avatarUrl', 'bannerUrl', 'accentColor']) if (out[k] === '') out[k] = null;
@@ -178,7 +178,7 @@ export default function AdminMemberEdit() {
               <Field label="Display name *" {...bind('displayName')} maxLength={60} />
               <Field label="URL slug" {...bind('slug')} placeholder="auto from name" hint={form.slug ? `/members/${form.slug}` : 'Leave blank to generate'} />
               <Field label="Dragonz role *" {...bind('rank')} maxLength={40} hint="e.g. Boss, Underboss, Enforcer" />
-              <Field label="Role order" type="number" min="0" max="1000" {...bind('rankOrder')} hint="Lower = more senior (sorting)" />
+              <Field label="Role order" type="number" min="0" max="1000" {...bind('rankOrder')} hint="Lower = more senior / shown first. Leave blank to add to the end." />
               <Field label="RP character" {...bind('rpCharacter')} maxLength={80} />
               <Field label="Joined Dragonz" type="date" {...bind('joinedAt')} hint="Used for anniversary shout-outs" />
               <div className="grid grid-cols-2 gap-2">

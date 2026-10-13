@@ -44,7 +44,7 @@ function useAction(keys) {
 const VIDEO_PLATFORMS = ['YOUTUBE', 'KICK', 'TWITCH', 'TIKTOK', 'INSTAGRAM'];
 
 function AddVideo({ onDone }) {
-  const [f, setF] = useState({ memberId: '', platform: 'KICK', title: '', url: '', thumbnailUrl: '', publishedAt: new Date().toISOString().slice(0, 10), isFeatured: false });
+  const [f, setF] = useState({ memberId: '', platform: 'KICK', title: '', url: '', thumbnailUrl: '', publishedAt: new Date().toISOString().slice(0, 10), isFeatured: false, sortOrder: '' });
   const [errors, setErrors] = useState({});
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,7 @@ function AddVideo({ onDone }) {
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErrors({}); setMsg(null);
     try {
-      await api.post('/admin/videos', { ...f, publishedAt: new Date(f.publishedAt).toISOString() });
+      await api.post('/admin/videos', { ...f, sortOrder: f.sortOrder === '' ? undefined : Number(f.sortOrder), publishedAt: new Date(f.publishedAt).toISOString() });
       qc.invalidateQueries({ queryKey: ['admin', 'videos'] });
       onDone();
     } catch (err) { setErrors(err.fieldErrors ?? {}); setMsg(err.message); } finally { setBusy(false); }
@@ -69,6 +69,7 @@ function AddVideo({ onDone }) {
         <Field label="Title *" maxLength={200} className="sm:col-span-2" {...bind('title')} />
         <Field label="Video URL *" placeholder="https://kick.com/…/videos/…" {...bind('url')} hint="Must be on the platform’s official domain" />
         <Field label="Published *" type="date" {...bind('publishedAt')} />
+        <Field label="Display order" type="number" min="0" max="9999" {...bind('sortOrder')} hint="Order among featured videos (lower = first). Blank = add to the end." />
       </div>
       <ImageField label="Thumbnail" kind="content" value={f.thumbnailUrl} onChange={(v) => setF({ ...f, thumbnailUrl: v })} error={errors.thumbnailUrl} />
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" checked={f.isFeatured} onChange={(e) => setF({ ...f, isFeatured: e.target.checked })} /> Feature on the home page</label>
@@ -129,6 +130,7 @@ export function AdminVideos() {
                   <td className="px-4 py-3"><Badge tone={v.source === 'SYNC' ? 'success' : 'default'}>{v.source}</Badge></td>
                   <td className="px-4 py-3 text-ink-400">{formatDate(v.publishedAt)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
+                    {v.isFeatured && <input type="number" min="0" max="9999" defaultValue={v.sortOrder ?? 0} key={v.sortOrder} onBlur={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n !== (v.sortOrder ?? 0)) flag(v, { sortOrder: n }); }} className="input mr-1 !inline-block !h-8 !w-14 !px-2 !py-1 align-middle text-xs" title="Display order on the home page (lower = first)" aria-label="Display order" />}
                     <button type="button" className={iconBtn} disabled={act.busy === v.id} onClick={() => flag(v, { isFeatured: !v.isFeatured })} title={v.isFeatured ? 'Remove from home page' : 'Show on home page'} aria-label={v.isFeatured ? 'Remove from home page' : 'Show on home page'}><Star className={`h-4 w-4 ${v.isFeatured ? 'fill-dragon-400 text-dragon-400' : ''}`} /></button>
                     <button type="button" className={iconBtn} disabled={act.busy === v.id} onClick={() => flag(v, { isHidden: !v.isHidden })} title={v.isHidden ? 'Show' : 'Hide'} aria-label={v.isHidden ? 'Show' : 'Hide'}>{v.isHidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}</button>
                     {safeUrl(v.url) && <a href={v.url} target="_blank" rel="noopener noreferrer" className={iconBtn} aria-label="Open"><ExternalLink className="h-4 w-4" /></a>}
@@ -185,11 +187,12 @@ export function AdminCommunity() {
                           <div className="flex gap-2"><Button size="sm" variant="danger" loading={act.busy === s.id} onClick={() => moderate(s, { status: 'REJECTED', rejectionReason: reason })}>Reject</Button><Button size="sm" variant="ghost" onClick={() => setRejecting(null)}>Cancel</Button></div>
                         </div>
                       ) : (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {s.status !== 'APPROVED' && <Button size="sm" variant="secondary" loading={act.busy === s.id} onClick={() => moderate(s, { status: 'APPROVED' })}><Check className="h-4 w-4" /> Approve</Button>}
                           {s.status !== 'FEATURED' && <Button size="sm" variant="secondary" disabled={act.busy === s.id} onClick={() => moderate(s, { status: 'FEATURED' })}><Star className="h-4 w-4" /> Feature</Button>}
                           {s.status !== 'REJECTED' && <Button size="sm" variant="ghost" onClick={() => { setRejecting(s.id); setReason(''); }}><X className="h-4 w-4" /> Reject</Button>}
-                          <button type="button" className={`${iconBtn} ml-auto`} onClick={() => remove(s)} aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
+                          {(s.status === 'APPROVED' || s.status === 'FEATURED') && <label className="ml-auto flex items-center gap-1 text-xs text-ink-400">#<input type="number" min="0" max="9999" defaultValue={s.sortOrder ?? 0} key={s.sortOrder} onBlur={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n !== (s.sortOrder ?? 0)) moderate(s, { status: s.status, sortOrder: n }); }} className="input !h-8 !w-14 !px-2 !py-1 text-xs" title="Display order in the showcase (lower = first)" aria-label="Display order" /></label>}
+                          <button type="button" className={`${iconBtn} ${(s.status === 'APPROVED' || s.status === 'FEATURED') ? '' : 'ml-auto'}`} onClick={() => remove(s)} aria-label="Delete"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       )}
                     </div>
@@ -275,7 +278,7 @@ export function AdminSupporters() {
 
 // ── Hall of Fame ─────────────────────────────────────────────────────────
 const ACH_EMPTY = { title: '', description: '', category: 'TOURNAMENT', achievedAt: '', imageUrl: '', memberId: '', sortOrder: 0, isFeatured: false, inHallOfFame: true };
-const MS_EMPTY = { memberId: '', platform: 'YOUTUBE', type: 'SUBSCRIBERS', value: '', title: '', achievedAt: '', isFeatured: false };
+const MS_EMPTY = { memberId: '', platform: 'YOUTUBE', type: 'SUBSCRIBERS', value: '', title: '', achievedAt: '', isFeatured: false, sortOrder: 0 };
 const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
 
 function HofForm({ kind, initial, onDone }) {
@@ -290,7 +293,7 @@ function HofForm({ kind, initial, onDone }) {
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErrors({}); setMsg(null);
     const body = isMs
-      ? { memberId: f.memberId, platform: f.platform, type: f.type, value: f.value === '' ? null : Number(String(f.value).replace(/[, ]/g, '')), title: f.title, achievedAt: f.achievedAt, isFeatured: f.isFeatured }
+      ? { memberId: f.memberId, platform: f.platform, type: f.type, value: f.value === '' ? null : Number(String(f.value).replace(/[, ]/g, '')), title: f.title, achievedAt: f.achievedAt, isFeatured: f.isFeatured, sortOrder: f.sortOrder === '' ? 0 : Number(f.sortOrder) }
       : { title: f.title, description: f.description, category: f.category, achievedAt: f.achievedAt, imageUrl: f.imageUrl, memberId: f.memberId, sortOrder: f.sortOrder === '' ? 0 : Number(f.sortOrder), isFeatured: f.isFeatured, inHallOfFame: f.inHallOfFame };
     try {
       if (initial) await api.patch(`/admin/${kind}/${initial.id}`, body); else await api.post(`/admin/${kind}`, body);
@@ -310,6 +313,7 @@ function HofForm({ kind, initial, onDone }) {
           <Field as="select" label="Type *" {...bind('type')}>{['SUBSCRIBERS', 'FOLLOWERS', 'VIEWS', 'RP_ACHIEVEMENT', 'CUSTOM'].map((t) => <option key={t} value={t}>{titleCase(t)}</option>)}</Field>
           <Field label="Value" inputMode="numeric" placeholder="100000" {...bind('value')} />
           <Field label="Date *" type="date" {...bind('achievedAt')} />
+          <Field label="Display order" type="number" min="0" max="9999" {...bind('sortOrder')} hint="0 = newest first. Set 1, 2, 3… to pin a milestone to the top." />
           {check('isFeatured', 'Featured')}
         </div>
       ) : (

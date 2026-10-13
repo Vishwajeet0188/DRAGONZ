@@ -64,7 +64,9 @@ export async function createMember(actor, body) {
     if (hit) throw conflict('Slug already in use', [{ field: 'slug', message: 'Already in use' }]);
   }
   const slug = body.slug ?? (await uniqueSlug(body.displayName));
-  const [row] = await db.insert(members).values({ ...body, slug }).returning();
+  // Blank Role order → append to the end of the roster (max + 1).
+  const rankOrder = body.rankOrder ?? (((await db.select({ max: sql`coalesce(max(${members.rankOrder}), 0)` }).from(members))[0].max ?? 0) + 1);
+  const [row] = await db.insert(members).values({ ...body, slug, rankOrder }).returning();
   await audit(actor.id, 'member.create', 'member', row.id, { displayName: row.displayName, slug });
   return row;
 }

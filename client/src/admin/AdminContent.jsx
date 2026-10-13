@@ -92,9 +92,9 @@ export function AdminNewsEdit() {
   const { id } = useParams();
   const ed = useEditor({
     base: '/admin/news', id, queryKey: ['admin', 'news'],
-    empty: { title: '', slug: '', excerpt: '', content: '', featuredImageUrl: '', category: 'ANNOUNCEMENT', status: 'DRAFT', isPinned: false },
-    toForm: (p) => ({ ...p, excerpt: p.excerpt ?? '', featuredImageUrl: p.featuredImageUrl ?? '' }),
-    toBody: ({ title, slug, excerpt, content, featuredImageUrl, category, status, isPinned }) => ({ title, slug, excerpt, content, featuredImageUrl, category, status, isPinned }),
+    empty: { title: '', slug: '', excerpt: '', content: '', featuredImageUrl: '', category: 'ANNOUNCEMENT', status: 'DRAFT', isPinned: false, sortOrder: 0 },
+    toForm: (p) => ({ ...p, excerpt: p.excerpt ?? '', featuredImageUrl: p.featuredImageUrl ?? '', sortOrder: p.sortOrder ?? 0 }),
+    toBody: ({ title, slug, excerpt, content, featuredImageUrl, category, status, isPinned, sortOrder }) => ({ title, slug, excerpt, content, featuredImageUrl, category, status, isPinned, sortOrder: sortOrder === '' ? 0 : Number(sortOrder) }),
   });
   const [preview, setPreview] = useState(false);
   if (!ed.isNew && ed.q.isPending) return <PageLoader />;
@@ -123,6 +123,7 @@ export function AdminNewsEdit() {
             <Field as="select" label="Status" {...ed.bind('status')}><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></Field>
             <Field as="select" label="Category" {...ed.bind('category')}>{['ANNOUNCEMENT', 'RECRUITMENT', 'COMMUNITY', 'NOTICE'].map((c) => <option key={c} value={c}>{titleCase(c)}</option>)}</Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" checked={ed.form.isPinned} onChange={(e) => ed.set('isPinned')(e.target.checked)} /> Pin to top</label>
+            <Field label="Display order" type="number" min="0" max="9999" {...ed.bind('sortOrder')} hint="0 = newest first. Set 1, 2, 3… to pin a post above the rest (below pinned)." />
             <Field label="URL slug" placeholder="auto from title" {...ed.bind('slug')} />
           </section>
           <section className="card p-5"><ImageField label="Featured image" kind="news" value={ed.form.featuredImageUrl} onChange={ed.set('featuredImageUrl')} /></section>

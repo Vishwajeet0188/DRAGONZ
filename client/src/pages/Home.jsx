@@ -16,62 +16,18 @@ import { MemberCard } from '../components/members/MemberCard.jsx';
 import { LiveCard, VideoCard } from '../components/media/MediaCards.jsx';
 import { Celebrations, Leaderboard, PollCard, QuoteCard } from '../components/fanzone/FanZone.jsx';
 import { useSiteSettings } from '../lib/site.js';
+import { AnnouncementCarousel } from '../components/home/AnnouncementCarousel.jsx';
 
 function Section({ children, className = '' }) {
   return <section className={`container-page py-10 sm:py-14 ${className}`}>{children}</section>;
 }
 
-/** "From the Boss's desk": latest post as a lead story, the next two as compact rows. */
+/** "From the Boss's desk": announcements that auto-rotate one by one. */
 function Announcements({ items }) {
-  const [lead, ...rest] = items;
   return (
     <div className="flex flex-col">
       <SectionHeader eyebrow="From the Boss's desk" title="Announcements" to="/news" />
-      {!lead ? (
-        <div className="card flex flex-1 flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-          <Megaphone className="h-7 w-7 text-dragon-400" aria-hidden="true" />
-          <p className="font-display text-xl font-bold">No announcements yet</p>
-          <p className="max-w-xs text-sm text-ink-400">Crew news, recruitment calls and notices from the Boss will land here.</p>
-        </div>
-      ) : (
-        <div className="card flex flex-1 flex-col overflow-hidden">
-          <Link to={`/news/${lead.slug}`} className="group relative block overflow-hidden">
-            {safeUrl(lead.featuredImageUrl) ? (
-              <img src={lead.featuredImageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="aspect-[21/9] w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-            ) : (
-              <div className="relative aspect-[2/1] w-full sm:aspect-[3/1] bg-[radial-gradient(90%_140%_at_0%_0%,rgb(217_165_20/.22),transparent_60%),linear-gradient(180deg,#141416,#0e0e10)]" aria-hidden="true">
-                <Megaphone className="absolute right-6 top-5 h-14 w-14 -rotate-12 text-dragon-400/20" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/40 to-transparent" aria-hidden="true" />
-            <div className="absolute inset-x-0 bottom-0 p-5">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-ink-300">
-                <Badge tone={lead.category === 'RECRUITMENT' ? 'ember' : 'dragon'}>{titleCase(lead.category)}</Badge>
-                {lead.isPinned && <Badge tone="dragon"><Pin className="h-3 w-3" /> Pinned</Badge>}
-                <span>{timeAgo(lead.publishedAt)}</span>
-              </div>
-              <h3 className="mt-2 font-display text-2xl font-bold leading-tight text-white group-hover:text-dragon-200 sm:text-3xl">{lead.title}</h3>
-            </div>
-          </Link>
-          <div className="px-5 pb-5 pt-3">
-            {lead.excerpt && <p className="line-clamp-2 text-sm text-ink-300">{lead.excerpt}</p>}
-            <Link to={`/news/${lead.slug}`} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-dragon-300 hover:text-white">Read more <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          {rest.length > 0 && (
-            <ul className="mt-auto divide-y divide-ink-700/70 border-t border-ink-700/70">
-              {rest.map((n) => (
-                <li key={n.id}>
-                  <Link to={`/news/${n.slug}`} className="group flex items-center gap-3 px-5 py-3.5 hover:bg-ink-800/60">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-dragon-400" aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate font-medium text-ink-100 group-hover:text-white">{n.title}</span>
-                    <span className="shrink-0 text-xs text-ink-500">{timeAgo(n.publishedAt)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      <AnnouncementCarousel items={items} />
     </div>
   );
 }

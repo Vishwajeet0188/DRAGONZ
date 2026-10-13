@@ -9,6 +9,7 @@ import { Badge, Pagination } from '../components/ui/Bits.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Markdown } from '../components/ui/Markdown.jsx';
 import { EmptyState, ErrorState, Skeleton } from '../components/ui/States.jsx';
+import { AnnouncementCarousel } from '../components/home/AnnouncementCarousel.jsx';
 
 const CATS = ['ANNOUNCEMENT', 'RECRUITMENT', 'COMMUNITY', 'NOTICE'];
 
@@ -42,7 +43,9 @@ export function NewsList() {
   const category = params.get('category') ?? '';
   const page = Number(params.get('page') ?? 1);
   const q = useQuery({ queryKey: ['news', category, page], queryFn: () => api.get(`/news${qs({ category, page })}`), placeholderData: keepPreviousData });
+  const spotlight = useQuery({ queryKey: ['news', 'spotlight'], queryFn: () => api.get('/news?category=ANNOUNCEMENT&page=1') });
   const set = (patch) => setParams(Object.fromEntries(Object.entries({ category, page: 1, ...patch }).filter(([k, v]) => v && !(k === 'page' && v === 1))), { replace: true });
+  const spotlightItems = (spotlight.data?.data ?? []).slice(0, 6);
 
   return (
     <div className="container-page py-12">
@@ -50,6 +53,9 @@ export function NewsList() {
         <p className="eyebrow mb-2">Newsroom</p>
         <h1 className="text-5xl font-bold uppercase">News & announcements</h1>
       </header>
+      {page === 1 && spotlightItems.length > 0 && (
+        <div className="mb-10"><AnnouncementCarousel items={spotlightItems} variant="hero" /></div>
+      )}
       <div className="mb-8 flex flex-wrap gap-2" role="tablist" aria-label="Category">
         {['', ...CATS].map((c) => (
           <button key={c || 'all'} type="button" role="tab" aria-selected={category === c} onClick={() => set({ category: c })}

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '../../db/index.js';
 import { AppError, badRequest, forbidden, notFound } from '../../lib/errors.js';
 import { pageMeta, paginate } from '../../lib/util.js';
@@ -46,9 +46,10 @@ export async function attachMedia(rows) {
 
 const publicColumns = {
   id: subs.id, type: subs.type, title: subs.title, description: subs.description, externalUrl: subs.externalUrl,
-  status: subs.status, createdAt: subs.createdAt, authorName: users.displayName,
+  status: subs.status, sortOrder: subs.sortOrder, createdAt: subs.createdAt, authorName: users.displayName,
   memberSlug: members.slug, memberName: members.displayName,
 };
+const nextSortOrder = async () => ((await db.select({ max: sql`coalesce(max(${subs.sortOrder}), 0)` }).from(subs))[0].max ?? 0) + 1;
 
 export async function listPublic({ type, member, page = 1, pageSize = 24, featuredFirst = true }) {
   const pg = paginate({ page, pageSize });
@@ -56,7 +57,7 @@ export async function listPublic({ type, member, page = 1, pageSize = 24, featur
   if (type) filters.push(eq(subs.type, type));
   if (member) filters.push(eq(members.slug, member));
   const where = and(...filters);
-  const order = featuredFirst ? [desc(sql`(${subs.status} = 'FEATURED')`), desc(subs.moderatedAt)] : [desc(subs.moderatedAt)];
+  const order = featuredFirst ? [desc(sql`(${subs.status} = 'FEATURED')`), asc(subs.sortOrder), desc(subs.moderatedAt)] : [asc(subs.sortOrder), desc(subs.moderatedAt)];
   const [rows, [{ total }]] = await Promise.all([
     db.select(publicColumns).from(subs).innerJoin(users, eq(users.id, subs.authorId)).leftJoin(members, eq(members.id, subs.featuredMemberId))
       .where(where).orderBy(...order).limit(pg.limit).offset(pg.offset),
@@ -99,7 +100,7 @@ export async function createSubmission(user, body, files) {
     return await db.transaction(async (tx) => {
       const [row] = await tx.insert(subs).values({
         authorId: user.id, featuredMemberId: memberId, type: body.type, title: body.title,
-        description: body.description, externalUrl: body.externalUrl,
+        description: body.description, externalUrl: body.externalUrl, sortOrder: await nextSortOrder(),
       }).returning();
       if (stored.length) {
         await tx.insert(media).values(stored.map(({ key, img }) => ({ submissionId: row.id, storageKey: key, mimeType: img.contentType, sizeBytes: img.sizeBytes, width: img.width, height: img.height })));
@@ -138,11 +139,12 @@ export async function adminList({ status, page }) {
   return { data: await attachMedia(rows), meta: pageMeta(pg, total) };
 }
 
-export async function moderate(actor, id, { status, rejectionReason }) {
+export async function moderate(actor, id, { status, rejectionReason, sortOrder }) {
   const [row] = await db.select().from(subs).where(and(eq(subs.id, id), isNull(subs.deletedAt))).limit(1);
   if (!row) throw notFound('Submission not found');
   const [updated] = await db.update(subs).set({
     status, rejectionReason: status === 'REJECTED' ? (rejectionReason || 'Does not meet the community guidelines') : null,
+    ...(sortOrder == null ? {} : { sortOrder }),
     moderatedById: actor.id, moderatedAt: new Date(),
   }).where(eq(subs.id, id)).returning();
   await db.insert(notifications).values({
