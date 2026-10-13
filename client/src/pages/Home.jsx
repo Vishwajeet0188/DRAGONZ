@@ -69,7 +69,7 @@ function UpcomingEvents({ items }) {
           <p className="max-w-xs text-sm text-ink-400">Races, tournaments and community nights will show up here.</p>
         </div>
       ) : (
-        <div className="card flex flex-1 flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:border-dragon-500/40 hover:shadow-[0_24px_60px_-30px_rgb(217_165_20/.5)]">
+        <div className="group/card card relative flex flex-1 flex-col overflow-hidden transition duration-300 hover:-translate-y-1.5 hover:border-dragon-500/60 hover:shadow-[0_28px_70px_-26px_rgb(217_165_20/.6)]">
           {(() => {
             const cd = countdown(next.startsAt, now, next.status);
             return (
