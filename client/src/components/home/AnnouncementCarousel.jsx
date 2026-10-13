@@ -52,7 +52,7 @@ export function AnnouncementCarousel({ items = [], variant = 'panel' }) {
       aria-roledescription="carousel"
       aria-label="Announcements"
     >
-      <div className={`card relative overflow-hidden ${hero ? 'min-h-[18rem] sm:min-h-[22rem]' : 'min-h-[22rem]'}`}>
+      <div className={`card relative overflow-hidden transition duration-300 hover:-translate-y-1 hover:border-dragon-500/40 hover:shadow-[0_24px_60px_-30px_rgb(217_165_20/.5)] ${hero ? 'min-h-[18rem] sm:min-h-[22rem]' : 'min-h-[22rem]'}`}>
         {/* Slides stacked; only the active one is shown (crossfade). */}
         {items.map((a, idx) => (
           <article
