@@ -101,7 +101,7 @@ const videoBody = z.object({
   isHidden: z.boolean().default(false),
 }).strict().refine((v) => isPlatformUrl(v.platform, v.url), { message: 'URL must be an https link on the platform’s official domain', path: ['url'] });
 const flagsBody = z.object({ isFeatured: z.boolean().optional(), isHidden: z.boolean().optional(), sortOrder: z.coerce.number().int().min(0).max(9999).optional() }).strict();
-const nextSortOrder = async (table) => ((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max ?? 0) + 1;
+const nextSortOrder = async (table) => Number((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max) + 1;
 const idParam = z.object({ id: z.string().uuid() });
 
 export const videosAdminRouter = Router();

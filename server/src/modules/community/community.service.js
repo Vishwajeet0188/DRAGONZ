@@ -49,7 +49,7 @@ const publicColumns = {
   status: subs.status, sortOrder: subs.sortOrder, createdAt: subs.createdAt, authorName: users.displayName,
   memberSlug: members.slug, memberName: members.displayName,
 };
-const nextSortOrder = async () => ((await db.select({ max: sql`coalesce(max(${subs.sortOrder}), 0)` }).from(subs))[0].max ?? 0) + 1;
+const nextSortOrder = async () => Number((await db.select({ max: sql`coalesce(max(${subs.sortOrder}), 0)` }).from(subs))[0].max) + 1;
 
 export async function listPublic({ type, member, page = 1, pageSize = 24, featuredFirst = true }) {
   const pg = paginate({ page, pageSize });

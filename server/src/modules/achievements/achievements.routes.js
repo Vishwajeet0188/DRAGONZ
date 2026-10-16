@@ -61,7 +61,7 @@ function crud(router, table, body, name, perm, order, appendSort = false) {
   router.post(`/${name}`, requirePermission(perm), validate({ body }), async (req, res) => {
     // Curated lists append new entries to the end unless the admin typed a Display order.
     const values = (appendSort && req.body.sortOrder == null)
-      ? { ...req.body, sortOrder: (((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max ?? 0) + 1) }
+      ? { ...req.body, sortOrder: Number((await db.select({ max: sql`coalesce(max(${table.sortOrder}), 0)` }).from(table))[0].max) + 1 }
       : req.body;
     const [row] = await db.insert(table).values(values).returning();
     await audit(req.user.id, `${name}.create`, name, row.id, { title: row.title });
