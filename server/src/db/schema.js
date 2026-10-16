@@ -104,6 +104,9 @@ export const members = pgTable('members', {
   accentColor: varchar('accent_color', { length: 7 }),
   isCreator: boolean('is_creator').notNull().default(false),
   isFeatured: boolean('is_featured').notNull().default(false),
+  // Shooters = dedicated gang fighters. Shown on their own page, hidden from the normal roster.
+  isShooter: boolean('is_shooter').notNull().default(false),
+  shooterStats: jsonb('shooter_stats').notNull().default([]), // [{ label, value }] — manual combat stats
   status: memberStatusEnum('status').notNull().default('ACTIVE'),
   joinedAt: ts('joined_at'),
   birthMonth: integer('birth_month'), // 1–12, optional; year deliberately not stored
@@ -117,7 +120,19 @@ export const members = pgTable('members', {
   index('members_status_rank_idx').on(t.status, t.rankOrder),
   index('members_creator_idx').on(t.isCreator),
   index('members_featured_idx').on(t.isFeatured),
+  index('members_shooter_idx').on(t.isShooter),
 ]);
+
+// POV clips for a shooter — links to YouTube/Kick/Medal/Streamable, with an optional uploaded thumbnail.
+export const shooterPovs = pgTable('shooter_povs', {
+  id: id(),
+  memberId: uuid('member_id').notNull().references(() => members.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 140 }).notNull(),
+  url: text('url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  ...timestamps,
+}, (t) => [index('shooter_povs_member_idx').on(t.memberId)]);
 
 export const platformAccounts = pgTable('platform_accounts', {
   id: id(),

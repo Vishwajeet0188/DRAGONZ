@@ -49,7 +49,7 @@ const visible = and(isNull(members.deletedAt), inArray(members.status, ['ACTIVE'
 
 export async function listMembers({ q, rank, creator, platform, live, sort, page, pageSize }) {
   const pg = paginate({ page, pageSize });
-  const filters = [visible];
+  const filters = [visible, eq(members.isShooter, false)]; // shooters live on their own page
   if (q) {
     const pattern = `%${escapeLike(q)}%`;
     filters.push(or(ilike(members.displayName, pattern), ilike(members.rpCharacter, pattern), ilike(members.rank, pattern)));

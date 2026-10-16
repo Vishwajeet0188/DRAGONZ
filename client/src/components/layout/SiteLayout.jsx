@@ -14,6 +14,7 @@ import { PageBackground } from '../ui/PageBackground.jsx';
 
 const NAV = [
   { to: '/members', label: 'Members' },
+  { to: '/shooters', label: 'Shooters' },
   { to: '/live', label: 'Live', live: true },
   { to: '/videos', label: 'Videos' },
   { to: '/events', label: 'Events' },
@@ -140,7 +141,7 @@ function Header() {
 function Footer() {
   const { discordUrl } = useSiteSettings();
   const cols = [
-    ['Explore', [['/members', 'Members'], ['/live', 'Live now'], ['/videos', 'Videos'], ['/hall-of-fame', 'Hall of Fame']]],
+    ['Explore', [['/members', 'Members'], ['/shooters', 'Shooters'], ['/live', 'Live now'], ['/videos', 'Videos'], ['/hall-of-fame', 'Hall of Fame']]],
     ['Community', [['/events', 'Events'], ['/news', 'News'], ['/community', 'Showcase'], ['/fan-zone', 'Fan Zone'], ['/clip-of-the-week', 'Clip of the Week'], ['/quotes', 'Quote Wall'], ['/join', 'Join the crew'], ['/about', 'About Dragonz']]],
     ['Account', [['/register', 'Create account'], ['/login', 'Sign in'], ['/dashboard', 'Dashboard'], ['/settings', 'Settings']]],
   ];

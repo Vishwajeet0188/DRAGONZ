@@ -22,7 +22,7 @@ async function getHome() {
     // Featured crew is earned by streaming activity (see services/crew.js), plus members an admin pinned.
     featuredCrew().then(async (fc) => {
       if (!fc.items.length) return { fc, rows: [] };
-      const rows = await db.select(memberCardColumns).from(members).where(and(activeMember, inArray(members.id, fc.items.map((i) => i.memberId))));
+      const rows = await db.select(memberCardColumns).from(members).where(and(activeMember, eq(members.isShooter, false), inArray(members.id, fc.items.map((i) => i.memberId))));
       const byId = new Map(rows.map((r) => [r.id, r]));
       return { fc, rows: fc.items.filter((i) => byId.has(i.memberId)).map((i) => ({ ...byId.get(i.memberId), featuredReason: i.reason, crew: i.crew })) };
     }),
@@ -45,7 +45,7 @@ async function getHome() {
     listPublic({ pageSize: 6 }).then((r) => r.data),
     // Whole active crew (hero ribbon + "The crew" grid), ordered by rank.
     db.select({ ...memberMini, rank: members.rank, rpCharacter: members.rpCharacter, isCreator: members.isCreator, tagline: members.tagline, bio: sql`left(${members.bio}, 220)` }).from(members)
-      .where(activeMember).orderBy(asc(members.rankOrder), asc(members.displayName)).limit(60),
+      .where(and(activeMember, eq(members.isShooter, false))).orderBy(asc(members.rankOrder), asc(members.displayName)).limit(60),
   ]);
 
   // Resolve host display names for the upcoming-events cards.

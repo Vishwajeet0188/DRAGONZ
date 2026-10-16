@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Crosshair, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { api } from '../lib/api.js';
 import { PLATFORMS, PLATFORM_META } from '../lib/platforms.js';
 import { Field, FormAlert } from '../components/ui/Field.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
-import { ErrorState, PageLoader } from '../components/ui/States.jsx';
+import { ErrorState, PageLoader, Skeleton } from '../components/ui/States.jsx';
+import { ImageField } from './fields.jsx';
+import { safeUrl } from '../lib/format.js';
 import { AdminHeader } from './ui.jsx';
 
 const EMPTY = {
   displayName: '', slug: '', rank: 'Soldier', rankOrder: '', rpCharacter: '', tagline: '', bio: '', avatarUrl: '', bannerUrl: '',
-  accentColor: '#d9a514', isCreator: false, isFeatured: false, status: 'ACTIVE', joinedAt: '', birthMonth: '', birthDay: '',
+  accentColor: '#d9a514', isCreator: false, isFeatured: false, isShooter: false, status: 'ACTIVE', joinedAt: '', birthMonth: '', birthDay: '',
 };
 
 const toForm = (m) => ({
@@ -84,6 +86,63 @@ function PlatformsEditor({ rows, setRows, errors }) {
   );
 }
 
+/** Up to 6 label/value combat-stat rows. */
+function StatsEditor({ stats, setStats }) {
+  const set = (i, patch) => setStats(stats.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  return (
+    <div className="space-y-2">
+      {stats.map((s, i) => (
+        <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <Field label={i === 0 ? 'Label' : undefined} placeholder="K/D" value={s.label} maxLength={24} onChange={(e) => set(i, { label: e.target.value })} />
+          <Field label={i === 0 ? 'Value' : undefined} placeholder="3.4" value={s.value} maxLength={24} onChange={(e) => set(i, { value: e.target.value })} />
+          <button type="button" onClick={() => setStats(stats.filter((_, j) => j !== i))} className={`grid h-10 w-10 place-items-center self-end rounded-lg text-ink-400 hover:bg-ink-700 hover:text-red-300`} aria-label="Remove stat"><Trash2 className="h-4 w-4" /></button>
+        </div>
+      ))}
+      {stats.length < 6 && <Button type="button" variant="secondary" size="sm" onClick={() => setStats([...stats, { label: '', value: '' }])}><Plus className="h-4 w-4" /> Add stat</Button>}
+    </div>
+  );
+}
+
+/** Add / list / delete a shooter's POV clips (link + optional uploaded thumbnail). */
+function ShooterPovs({ memberId }) {
+  const qc = useQueryClient();
+  const base = `/admin/shooters/${memberId}/povs`;
+  const q = useQuery({ queryKey: ['admin', 'shooter-povs', memberId], queryFn: () => api.get(base).then((r) => r.data), placeholderData: keepPreviousData });
+  const [f, setF] = useState({ title: '', url: '', thumbnailUrl: '' });
+  const [err, setErr] = useState({});
+  const [busy, setBusy] = useState(false);
+  const refresh = () => qc.invalidateQueries({ queryKey: ['admin', 'shooter-povs', memberId] });
+  const add = async () => {
+    setBusy(true); setErr({});
+    try {
+      await api.post(base, { title: f.title, url: f.url, thumbnailUrl: f.thumbnailUrl || undefined });
+      setF({ title: '', url: '', thumbnailUrl: '' }); refresh();
+    } catch (e) { setErr(e.fieldErrors ?? { url: e.message }); } finally { setBusy(false); }
+  };
+  const del = async (id) => { await api.del(`/admin/shooters/povs/${id}`).catch(() => {}); refresh(); };
+  return (
+    <div className="space-y-3">
+      {q.isPending ? <Skeleton className="h-16" /> : q.data?.length > 0 && (
+        <ul className="space-y-2">
+          {q.data.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 rounded-lg border border-ink-700 bg-ink-900/60 p-2">
+              {safeUrl(p.thumbnailUrl) ? <img src={p.thumbnailUrl} alt="" className="h-10 w-16 shrink-0 rounded object-cover" /> : <div className="grid h-10 w-16 shrink-0 place-items-center rounded bg-ink-800 text-[10px] text-ink-500">clip</div>}
+              <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-ink-100">{p.title}</p><p className="truncate text-xs text-ink-500">{p.url}</p></div>
+              <button type="button" onClick={() => del(p.id)} className="grid h-9 w-9 place-items-center rounded-lg text-ink-400 hover:bg-ink-700 hover:text-red-300" aria-label="Delete POV"><Trash2 className="h-4 w-4" /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="space-y-3 rounded-xl border border-ink-700 bg-ink-900/40 p-3">
+        <Field label="Clip title" placeholder="1v4 clutch at the docks" value={f.title} maxLength={140} onChange={(e) => setF({ ...f, title: e.target.value })} error={err.title} />
+        <Field label="Clip link" placeholder="https://youtube.com/… or kick.com, medal.tv, streamable.com" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} error={err.url} hint="YouTube, Kick, Twitch, Medal, Streamable, Instagram, TikTok or X" />
+        <ImageField label="Thumbnail (optional)" kind="content" value={f.thumbnailUrl} onChange={(v) => setF({ ...f, thumbnailUrl: v })} error={err.thumbnailUrl} />
+        <Button type="button" size="sm" loading={busy} onClick={add} disabled={!f.title.trim() || !f.url.trim()}><Plus className="h-4 w-4" /> Add POV</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminMemberEdit() {
   const { id } = useParams();
   const isNew = !id;
@@ -93,6 +152,7 @@ export default function AdminMemberEdit() {
 
   const [form, setForm] = useState(EMPTY);
   const [rows, setRows] = useState([]);
+  const [stats, setStats] = useState([]);
   const [errors, setErrors] = useState({});
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -102,6 +162,7 @@ export default function AdminMemberEdit() {
     if (q.data) {
       setForm(toForm(q.data));
       setRows(q.data.platforms.map(({ platform, handle, url, followerCount, isPrimary, syncEnabled, syncError, lastSyncedAt }) => ({ platform, handle, url, followerCount: followerCount ?? '', isPrimary, syncEnabled, syncError, lastSyncedAt })));
+      setStats(Array.isArray(q.data.shooterStats) ? q.data.shooterStats.map((s) => ({ label: s.label ?? '', value: s.value ?? '' })) : []);
     }
   }, [q.data]);
 
@@ -128,11 +189,13 @@ export default function AdminMemberEdit() {
       return;
     }
 
+    const shooterStats = stats.map((s) => ({ label: s.label.trim(), value: s.value.trim() })).filter((s) => s.label && s.value);
+
     let saved = null;
     try {
       saved = isNew
-        ? (await api.post('/admin/members', toPayload(form, true))).data
-        : (await api.patch(`/admin/members/${id}`, toPayload(form, false))).data;
+        ? (await api.post('/admin/members', { ...toPayload(form, true), shooterStats })).data
+        : (await api.patch(`/admin/members/${id}`, { ...toPayload(form, false), shooterStats })).data;
       await api.put(`/admin/members/${saved.id}/platforms`, { platforms });
       qc.invalidateQueries({ queryKey: ['admin'] });
       qc.invalidateQueries({ queryKey: ['members'] });
@@ -198,6 +261,23 @@ export default function AdminMemberEdit() {
             <p className="-mt-2 text-xs text-ink-400">Links must be https URLs on the official platform domain.</p>
             <PlatformsEditor rows={rows} setRows={setRows} errors={errors} />
           </section>
+
+          {form.isShooter && (
+            <section className="card space-y-5 border-red-500/30 p-5">
+              <div className="flex items-center gap-2"><Crosshair className="h-5 w-5 text-red-400" /><h2 className="text-lg font-bold">Shooter profile</h2></div>
+              <div>
+                <p className="label !mb-1">Combat stats</p>
+                <p className="mb-3 text-xs text-ink-400">Shown as bold numbers on the Shooters page. Up to 6 — e.g. “K/D” → “3.4”, “Clutches” → “120”.</p>
+                <StatsEditor stats={stats} setStats={setStats} />
+              </div>
+              <div className="border-t border-ink-700 pt-4">
+                <p className="label !mb-1">POV clips</p>
+                {isNew ? (
+                  <p className="text-xs text-ink-400">Save the member first, then add their POV clips here.</p>
+                ) : <ShooterPovs memberId={id} />}
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -221,6 +301,7 @@ export default function AdminMemberEdit() {
             </Field>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" {...check('isCreator')} /> Content creator</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-dragon-500" {...check('isFeatured')} /> Pin to Featured crew (always shown, even without hitting the weekly goals)</label>
+            <label className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2.5 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-red-500" {...check('isShooter')} /> <span><span className="inline-flex items-center gap-1 font-semibold text-red-300"><Crosshair className="h-3.5 w-3.5" /> Shooter</span><span className="block text-xs text-ink-400">Moves this member off the normal roster and onto the Shooters page.</span></span></label>
           </section>
 
           {!isNew && (

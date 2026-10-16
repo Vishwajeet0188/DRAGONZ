@@ -8,6 +8,7 @@ import { usePageViewTracking } from './lib/site.js';
 // Route-level code splitting.
 const Home = lazy(() => import('./pages/Home.jsx'));
 const Members = lazy(() => import('./pages/Members.jsx'));
+const Shooters = lazy(() => import('./pages/Shooters.jsx'));
 const MemberProfile = lazy(() => import('./pages/MemberProfile.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
 const Live = lazy(() => import('./pages/Live.jsx'));
@@ -74,6 +75,7 @@ export default function App() {
           <Route element={<SiteLayout />}>
             <Route index element={<Home />} />
             <Route path="members" element={<Members />} />
+            <Route path="shooters" element={<Shooters />} />
             <Route path="members/:slug" element={<MemberProfile />} />
             <Route path="about" element={<About />} />
             <Route path="search" element={<SearchPage />} />

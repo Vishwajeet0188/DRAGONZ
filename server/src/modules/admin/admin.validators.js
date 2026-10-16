@@ -19,6 +19,12 @@ export const memberBody = z.object({
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Hex colour like #e11d2e').nullable().optional().or(z.literal('').transform(() => null)),
   isCreator: z.boolean().default(false),
   isFeatured: z.boolean().default(false),
+  isShooter: z.boolean().default(false),
+  // Manual combat stats shown on the Shooters page, e.g. [{ label: 'K/D', value: '3.4' }].
+  shooterStats: z.array(z.object({
+    label: z.string().trim().min(1).max(24),
+    value: z.string().trim().min(1).max(24),
+  })).max(6).optional(),
   status: z.enum(['ACTIVE', 'INACTIVE', 'ALUMNI']).default('ACTIVE'),
   joinedAt: z.coerce.date().nullable().optional(),
   // Birthday without a year (privacy). Both or neither; empty string clears.

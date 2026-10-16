@@ -24,6 +24,7 @@ import { eventsRouter } from './modules/events/events.routes.js';
 import { newsRouter } from './modules/news/news.routes.js';
 import { communityRouter } from './modules/community/community.routes.js';
 import { hallOfFameRouter } from './modules/achievements/achievements.routes.js';
+import { shootersRouter, shootersAdminRouter } from './modules/shooters/shooters.routes.js';
 import { crewRouter } from './modules/crew/crew.routes.js';
 import { pollsRouter } from './modules/fanzone/polls.js';
 import { socialRouter } from './modules/fanzone/social.js';
@@ -130,6 +131,8 @@ export function createApp() {
   api.use('/news', newsRouter);
   api.use('/community', communityRouter);
   api.use('/hall-of-fame', hallOfFameRouter);
+  api.use('/shooters', shootersRouter);
+  api.use('/admin/shooters', shootersAdminRouter);
   api.use('/search', searchRouter);
   api.use('/me/supporters', meSupportersRouter);
   api.use('/me/avatar', meAvatarRouter);
