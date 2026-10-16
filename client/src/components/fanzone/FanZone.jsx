@@ -105,21 +105,6 @@ export function ProgressCard({ compact = false }) {
   );
 }
 
-/** Always-visible level + streak chip for the top nav — reuses the cached my-progress query. */
-export function HeaderProgress() {
-  const { user } = useAuth();
-  const q = useQuery({ queryKey: ['my-progress'], queryFn: () => api.get('/me/progress').then((r) => r.data), enabled: !!user, staleTime: 60_000 });
-  if (!user || !q.data) return null;
-  const p = q.data;
-  return (
-    <Link to="/fan-zone" title={`Level ${p.level} · ${p.name} — ${p.xp.toLocaleString('en-IN')} XP${p.streak ? ` · ${p.streak}-day streak` : ''}`}
-      className="hidden items-center gap-2 rounded-xl border border-ink-700 bg-ink-850 px-2 py-1.5 transition hover:border-dragon-500/40 md:inline-flex">
-      <LevelPill name={p.name} level={p.level} />
-      {p.streak > 0 && <span className="inline-flex items-center gap-0.5 text-xs font-bold text-ember-400"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{p.streak}</span>}
-    </Link>
-  );
-}
-
 // ── Daily check-in (once per day per browser session) ───────────────────
 export function CheckInToast() {
   const { user } = useAuth();
