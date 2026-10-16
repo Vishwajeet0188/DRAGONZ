@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { SearchPalette } from '../search/Search.jsx';
 import { useSiteSettings } from '../../lib/site.js';
 import { safeUrl } from '../../lib/format.js';
-import { CheckInToast } from '../fanzone/FanZone.jsx';
+import { CheckInToast, HeaderProgress } from '../fanzone/FanZone.jsx';
 import { PageBackground } from '../ui/PageBackground.jsx';
 
 const NAV = [
@@ -104,6 +104,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
           <SearchPalette />
+          {!loading && user && <HeaderProgress />}
           {!loading && (user ? <UserMenu /> : (
             <div className="hidden items-center gap-2 sm:flex">
               <Button to="/login" variant="ghost" size="sm">Sign in</Button>

@@ -68,6 +68,24 @@ export function ProgressCard({ compact = false }) {
         <span className="text-ink-200">{p.streak ? <><b>{p.streak}-day</b> streak</> : 'Visit daily to start a streak'}</span>
         <span className="ml-auto text-xs text-ink-500">+25 XP every 7 days</span>
       </div>
+      {(() => {
+        const nextBadge = p.badges.find((b) => !b.earned);
+        const toBonus = p.streak > 0 ? 7 - (p.streak % 7) : null; // days until the next 7-day streak bonus
+        return (
+          <div className="flex flex-wrap gap-2 text-xs">
+            {toBonus != null && toBonus % 7 !== 0 && (
+              <span className="inline-flex items-center gap-1 rounded-lg border border-ember-500/30 bg-ember-500/10 px-2.5 py-1 font-semibold text-ember-300">
+                <Flame className="h-3.5 w-3.5" aria-hidden="true" /> {toBonus} day{toBonus === 1 ? '' : 's'} to a +25 XP bonus
+              </span>
+            )}
+            {nextBadge && (
+              <span className="inline-flex items-center gap-1 rounded-lg border border-ink-700 bg-ink-900/60 px-2.5 py-1 text-ink-300" title={nextBadge.description}>
+                Next badge: <span aria-hidden="true">{nextBadge.icon}</span> <span className="font-semibold text-ink-200">{nextBadge.name}</span>
+              </span>
+            )}
+          </div>
+        );
+      })()}
       {!compact && (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-ink-400">Badges · {earned.length}/{p.badges.length}</p>
@@ -84,6 +102,21 @@ export function ProgressCard({ compact = false }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Always-visible level + streak chip for the top nav — reuses the cached my-progress query. */
+export function HeaderProgress() {
+  const { user } = useAuth();
+  const q = useQuery({ queryKey: ['my-progress'], queryFn: () => api.get('/me/progress').then((r) => r.data), enabled: !!user, staleTime: 60_000 });
+  if (!user || !q.data) return null;
+  const p = q.data;
+  return (
+    <Link to="/fan-zone" title={`Level ${p.level} · ${p.name} — ${p.xp.toLocaleString('en-IN')} XP${p.streak ? ` · ${p.streak}-day streak` : ''}`}
+      className="hidden items-center gap-2 rounded-xl border border-ink-700 bg-ink-850 px-2 py-1.5 transition hover:border-dragon-500/40 md:inline-flex">
+      <LevelPill name={p.name} level={p.level} />
+      {p.streak > 0 && <span className="inline-flex items-center gap-0.5 text-xs font-bold text-ember-400"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{p.streak}</span>}
+    </Link>
   );
 }
 
