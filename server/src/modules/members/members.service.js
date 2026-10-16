@@ -49,12 +49,15 @@ const visible = and(isNull(members.deletedAt), inArray(members.status, ['ACTIVE'
 
 export async function listMembers({ q, rank, creator, platform, live, sort, page, pageSize }) {
   const pg = paginate({ page, pageSize });
-  const filters = [visible, eq(members.isShooter, false)]; // shooters live on their own page
+  // Shooters live on their own page, so they're hidden from the roster by default — unless the
+  // visitor specifically picks the "Shooter" role filter, which reveals them here too.
+  const wantShooters = rank === 'Shooter';
+  const filters = [visible, eq(members.isShooter, wantShooters)];
   if (q) {
     const pattern = `%${escapeLike(q)}%`;
     filters.push(or(ilike(members.displayName, pattern), ilike(members.rpCharacter, pattern), ilike(members.rank, pattern)));
   }
-  if (rank) filters.push(eq(members.rank, rank));
+  if (rank && !wantShooters) filters.push(eq(members.rank, rank));
   if (creator !== undefined) filters.push(eq(members.isCreator, creator));
   if (platform) {
     filters.push(exists(db.select({ x: sql`1` }).from(platformAccounts)
@@ -81,8 +84,12 @@ export async function listMembers({ q, rank, creator, platform, live, sort, page
 
 export async function listRanks() {
   const rows = await db.selectDistinct({ rank: members.rank, rankOrder: members.rankOrder })
-    .from(members).where(visible).orderBy(asc(members.rankOrder));
-  return [...new Set(rows.map((r) => r.rank))];
+    .from(members).where(and(visible, eq(members.isShooter, false))).orderBy(asc(members.rankOrder));
+  const ranks = [...new Set(rows.map((r) => r.rank))];
+  // Expose a "Shooter" filter when at least one shooter exists.
+  const [{ n }] = await db.select({ n: count() }).from(members).where(and(visible, eq(members.isShooter, true)));
+  if (Number(n) > 0) ranks.push('Shooter');
+  return ranks;
 }
 
 export async function getMemberProfile(slug, viewerId) {

@@ -88,7 +88,7 @@ export default function Members() {
           <Toggle active={filters.creator === 'true'} onClick={() => update({ creator: filters.creator ? '' : 'true' })}>Creators only</Toggle>
           <select className="input h-10 w-auto py-0" value={filters.rank} onChange={(e) => update({ rank: e.target.value })} aria-label="Filter by role">
             <option value="">All roles</option>
-            {ranks.data?.map((r) => <option key={r} value={r}>{r}</option>)}
+            {ranks.data?.map((r) => <option key={r} value={r}>{r === 'Shooter' ? '🎯 Shooters' : r}</option>)}
           </select>
           <select className="input h-10 w-auto py-0" value={filters.platform} onChange={(e) => update({ platform: e.target.value })} aria-label="Filter by platform">
             <option value="">All platforms</option>
