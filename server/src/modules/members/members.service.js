@@ -49,10 +49,11 @@ const visible = and(isNull(members.deletedAt), inArray(members.status, ['ACTIVE'
 
 export async function listMembers({ q, rank, creator, platform, live, sort, page, pageSize }) {
   const pg = paginate({ page, pageSize });
-  // Shooters live on their own page, so they're hidden from the roster by default — unless the
-  // visitor specifically picks the "Shooter" role filter, which reveals them here too.
+  // Shooters are normal members here too (they also have their own page). The "Shooter" role
+  // filter narrows to just shooters; otherwise everyone shows.
   const wantShooters = rank === 'Shooter';
-  const filters = [visible, eq(members.isShooter, wantShooters)];
+  const filters = [visible];
+  if (wantShooters) filters.push(eq(members.isShooter, true));
   if (q) {
     const pattern = `%${escapeLike(q)}%`;
     filters.push(or(ilike(members.displayName, pattern), ilike(members.rpCharacter, pattern), ilike(members.rank, pattern)));
@@ -84,7 +85,7 @@ export async function listMembers({ q, rank, creator, platform, live, sort, page
 
 export async function listRanks() {
   const rows = await db.selectDistinct({ rank: members.rank, rankOrder: members.rankOrder })
-    .from(members).where(and(visible, eq(members.isShooter, false))).orderBy(asc(members.rankOrder));
+    .from(members).where(visible).orderBy(asc(members.rankOrder));
   const ranks = [...new Set(rows.map((r) => r.rank))];
   // Expose a "Shooter" filter when at least one shooter exists.
   const [{ n }] = await db.select({ n: count() }).from(members).where(and(visible, eq(members.isShooter, true)));
