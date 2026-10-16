@@ -25,7 +25,7 @@ const EMBERS = Array.from({ length: 16 }, (_, i) => ({
 
 function ShooterFX() {
   return (
-    <div className="shooter-fx pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+    <div className="shooter-fx pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
       <style>{`
         .shooter-fx .fx-glow{position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 20%,rgba(239,68,68,.20),transparent 60%);animation:fxBreathe 4.2s ease-in-out infinite}
         .shooter-fx .fx-fire{position:absolute;left:50%;top:-6%;width:70vmin;height:70vmin;transform:translateX(-50%);
