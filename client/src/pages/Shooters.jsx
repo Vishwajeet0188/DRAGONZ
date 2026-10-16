@@ -31,10 +31,17 @@ function ShooterCard({ s }) {
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-red-500/20 bg-ink-900/70 shadow-[0_20px_60px_-30px_rgb(0_0_0/.8)] backdrop-blur-sm transition duration-300 hover:border-red-500/50 hover:shadow-[0_28px_70px_-26px_rgb(239_68_68/.45)]">
       {/* banner */}
-      <div className="relative h-40 overflow-hidden sm:h-48">
+      <div className="relative h-36 overflow-hidden sm:h-40">
         {safeUrl(s.bannerUrl)
           ? <img src={s.bannerUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover opacity-70 transition duration-500 group-hover:scale-[1.03]" />
-          : <div className="h-full w-full bg-[radial-gradient(90%_140%_at_80%_0%,rgb(239_68_68/.28),transparent_60%),linear-gradient(160deg,#1a1210,#0b0b0d)]" aria-hidden="true" />}
+          : (
+            <div className="h-full w-full bg-[radial-gradient(90%_140%_at_80%_0%,rgb(239_68_68/.28),transparent_60%),linear-gradient(160deg,#1a1210,#0b0b0d)]" aria-hidden="true">
+              {/* tactical default: scanline grid + big faded callsign initial */}
+              <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgb(239_68_68/.06)_0_1px,transparent_1px_22px)]" />
+              <div className="absolute inset-0 bg-[linear-gradient(rgb(255_255_255/.03)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255/.03)_1px,transparent_1px)] bg-[length:26px_26px]" />
+              <span className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2 font-display text-[7rem] font-extrabold leading-none text-white/[0.04]">{(s.displayName || '?').charAt(0).toUpperCase()}</span>
+            </div>
+          )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/50 to-transparent" aria-hidden="true" />
         {/* tactical corner ticks */}
         <Crosshair className="absolute right-4 top-4 h-8 w-8 text-red-400/40" aria-hidden="true" />
@@ -54,7 +61,7 @@ function ShooterCard({ s }) {
           </div>
         </div>
 
-        {s.tagline && <p className="mt-4 flex items-start gap-2 text-sm font-medium text-red-200"><Flame className="mt-0.5 h-4 w-4 shrink-0 text-red-400" /> {s.tagline}</p>}
+        <p className="mt-4 flex items-start gap-2 text-sm font-medium text-red-200"><Flame className="mt-0.5 h-4 w-4 shrink-0 text-red-400" /> {s.tagline || 'Front-line Dragonz shooter.'}</p>
 
         {/* combat stats */}
         {s.stats?.length > 0 && (
@@ -71,14 +78,18 @@ function ShooterCard({ s }) {
         {s.bio && <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-ink-300">{s.bio}</p>}
 
         {/* POV clips */}
-        {s.povs?.length > 0 && (
-          <div className="mt-5">
-            <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-400"><Play className="h-3.5 w-3.5 text-red-400" /> POV clips</p>
+        <div className="mt-5">
+          <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-ink-400"><Play className="h-3.5 w-3.5 text-red-400" /> POV clips</p>
+          {s.povs?.length > 0 ? (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {s.povs.map((p) => <PovCard key={p.id} pov={p} />)}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center gap-3 rounded-lg border border-dashed border-ink-700 bg-ink-950/40 px-4 py-5 text-sm text-ink-500">
+              <Crosshair className="h-5 w-5 shrink-0 text-red-500/40" /> No POV clips posted yet.
+            </div>
+          )}
+        </div>
 
         {/* footer: platforms + profile */}
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-ink-700/70 pt-4">

@@ -8,7 +8,7 @@ import { requirePermission } from '../../middleware/session.js';
 import { PERMISSIONS as P } from '../../auth/permissions.js';
 import { notFound, badRequest } from '../../lib/errors.js';
 import { optionalMediaUrl } from '../../lib/validators.js';
-import { isAllowedLink } from '../community/community.service.js';
+import { isAllowedLink, youtubeId } from '../community/community.service.js';
 import { audit } from '../../services/audit.js';
 
 const { members, platformAccounts, shooterPovs } = schema;
@@ -39,7 +39,10 @@ shootersRouter.get('/', async (_req, res) => {
     ...m,
     stats: Array.isArray(m.shooterStats) ? m.shooterStats : [],
     platforms: (platBy.get(m.id) ?? []).map((p) => ({ platform: p.platform, url: p.url })),
-    povs: (povBy.get(m.id) ?? []).map((p) => ({ id: p.id, title: p.title, url: p.url, thumbnailUrl: p.thumbnailUrl })),
+    povs: (povBy.get(m.id) ?? []).map((p) => {
+      const yt = youtubeId(p.url);
+      return { id: p.id, title: p.title, url: p.url, thumbnailUrl: p.thumbnailUrl || (yt ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg` : null) };
+    }),
   }));
   res.set('Cache-Control', 'public, max-age=60');
   res.json({ data });
