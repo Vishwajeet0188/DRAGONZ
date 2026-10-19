@@ -105,7 +105,11 @@ export function createApp() {
     }));
   }
 
-  app.get('/api/health', async (_req, res) => {
+  // Liveness only — deliberately does NOT touch the database, so an uptime monitor pinging this
+  // every few minutes can't keep the DB awake and burn a free-tier compute quota. Use
+  // /api/health/db for a deep check that also verifies the database connection.
+  app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+  app.get('/api/health/db', async (_req, res) => {
     try {
       await pool.query('select 1');
       res.json({ status: 'ok' });

@@ -31,10 +31,10 @@ export function tick({ force = false } = {}) {
     sync: liveMode()
       ? await runJob('sync', env.SYNC_INTERVAL_SECONDS * 1000 - 5_000, () => runLockedSync(), force)
       : 'off (STREAMING_MODE=mock)',
-    email: await runJob('email', 30_000, async () => `${await processOutbox()} sent/retried`, force),
-    reminders: await runJob('reminders', 60_000, async () => `${await sendDueEventReminders()} reminders`, force),
+    email: await runJob('email', 120_000, async () => `${await processOutbox()} sent/retried`, force),
+    reminders: await runJob('reminders', 300_000, async () => `${await sendDueEventReminders()} reminders`, force),
     clips: await runJob('clips', 3_600_000, async () => `${await decideClipWinners()} winners decided`, force),
-    cleanup: await runJob('cleanup', 3_600_000, async () => {
+    cleanup: await runJob('cleanup', 21_600_000, async () => {
       await pool.query('delete from sessions where expires_at < now()');
       await pool.query("delete from auth_tokens where expires_at < now() - interval '7 days'");
       await pool.query("delete from email_outbox where status = 'SENT' and sent_at < now() - interval '30 days'");
@@ -50,7 +50,8 @@ export function startJobs() {
   else logger.info('Streaming sync is OFF (STREAMING_MODE=mock) — showing demo data only');
   const loop = async () => {
     await tick().catch((err) => logger.error({ err }, 'tick failed'));
-    timer = setTimeout(loop, 60_000 + Math.random() * 3_000);
+    // Idle heartbeat every ~3 min (was 60s) — fewer DB wakeups so a free Postgres can auto-sleep.
+    timer = setTimeout(loop, 180_000 + Math.random() * 5_000);
     timer.unref?.();
   };
   timer = setTimeout(loop, 5_000);
