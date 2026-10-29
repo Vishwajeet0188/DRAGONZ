@@ -70,18 +70,38 @@ async function persistAccounts(result, now) {
   }
 }
 
+```js
 async function persistVideos(platform, items) {
   for (const v of items) {
     await db.insert(videos).values({
-      memberId: v.memberId, platformAccountId: v.accountId, platform, externalId: v.externalId,
-      title: v.title, url: v.url, thumbnailUrl: v.thumbnailUrl, durationSec: v.durationSec,
-      viewCount: v.viewCount, publishedAt: v.publishedAt, source: 'SYNC',
+      memberId: v.memberId,
+      platformAccountId: v.accountId,
+      platform,
+      externalId: v.externalId,
+      title: v.title,
+      url: v.url,
+      thumbnailUrl: v.thumbnailUrl,
+      durationSec: v.durationSec,
+      viewCount: v.viewCount,
+      publishedAt: v.publishedAt,
+      source: 'SYNC',
     }).onConflictDoUpdate({
       target: [videos.platform, videos.externalId],
-      set: { title: v.title, thumbnailUrl: v.thumbnailUrl, durationSec: v.durationSec, viewCount: v.viewCount, updatedAt: new Date() },
+      set: {
+        memberId: v.memberId,
+        platformAccountId: v.accountId,
+        title: v.title,
+        url: v.url,
+        thumbnailUrl: v.thumbnailUrl,
+        durationSec: v.durationSec,
+        viewCount: v.viewCount,
+        publishedAt: v.publishedAt,
+        updatedAt: new Date(),
+      },
     });
   }
 }
+```
 
 async function persistLive(platform, result, now) {
   const checked = result.checkedAccountIds;
@@ -137,9 +157,22 @@ async function persistPastStreams(platform, items = []) {
 }
 
 /** Rough YouTube units per run, used to keep polling under the daily quota. */
-export function estimateYouTubeUnits(accountCount, videosPerChannel = 6) {
+export function estimateYouTubeUnits(accountCount, videosPerChannel = 500) {
   if (!accountCount) return 0;
-  return Math.ceil(accountCount / 50) + accountCount + Math.ceil((accountCount * videosPerChannel) / 50);
+
+  const channelDetailCalls = Math.ceil(accountCount / 50);
+  const handleLookupCalls = accountCount;
+  const playlistPageCalls =
+    accountCount * Math.ceil(videosPerChannel / 50);
+  const videoDetailCalls =
+    Math.ceil((accountCount * videosPerChannel) / 50);
+
+  return (
+    channelDetailCalls +
+    handleLookupCalls +
+    playlistPageCalls +
+    videoDetailCalls
+  );
 }
 
 /**

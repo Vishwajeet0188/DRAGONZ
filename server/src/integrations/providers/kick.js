@@ -1,15 +1,13 @@
-// Kick provider — official Kick Dev Public API (https://docs.kick.com).
-//   • App Access Token: POST https://id.kick.com/oauth/token (client_credentials)
-//   • GET https://api.kick.com/public/v1/channels?slug=a&slug=b  (up to 50 slugs per call)
-//     → data[].stream { is_live, viewer_count, thumbnail, start_time }, stream_title, broadcaster_user_id
-// Kick's public API has no endpoint for past broadcasts/VODs, so Kick "videos" stay admin-managed.
-// SECURITY: the channel payload can include the stream key/ingest URL — we only ever copy the
-// specific public fields below and never log or store the raw response.
+// Kick provider — official Public API for channel/live data, plus Kick's unofficial
+// website API for past VODs. The website endpoint is not officially supported and
+// may change or be blocked by Kick at any time.
 import { fetchJson, chunk, ProviderError } from '../http.js';
 
 const API = 'https://api.kick.com/public/v1';
 const TOKEN_URL = 'https://id.kick.com/oauth/token';
+const WEB_API = 'https://kick.com/api/v2';
 const SLUG_RE = /^[a-z0-9_-]{1,25}$/;
+const MAX_VODS_PER_CHANNEL = 24;
 
 export function parseKickSlug(account) {
   try {
@@ -25,6 +23,39 @@ const validDate = (s) => {
   const d = s ? new Date(s) : null;
   return d && !Number.isNaN(d.getTime()) && d.getUTCFullYear() > 2000 ? d : null;
 };
+
+function asArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.videos)) return payload.videos;
+  if (Array.isArray(payload?.data?.videos)) return payload.data.videos;
+  return [];
+}
+
+function normalizeVod(v, slug) {
+  const id = v?.uuid ?? v?.id ?? v?.video_id ?? v?.livestream_id;
+  if (id == null) return null;
+  const title = String(v?.session_title ?? v?.title ?? v?.livestream?.session_title ?? `${slug} on Kick`).trim().slice(0, 200);
+  const rawUrl = v?.video_url ?? v?.url ?? v?.canonical_url;
+  const url = typeof rawUrl === 'string' && rawUrl.startsWith('https://')
+    ? rawUrl
+    : `https://kick.com/${slug}/videos/${encodeURIComponent(String(v?.uuid ?? id))}`;
+  const thumbnail = v?.thumbnail?.url ?? v?.thumbnail_url ?? v?.thumbnail ?? v?.livestream?.thumbnail;
+  const createdAt = v?.created_at ?? v?.start_time ?? v?.started_at ?? v?.livestream?.created_at;
+  const durationRaw = v?.duration ?? v?.duration_seconds ?? v?.livestream?.duration;
+  const durationSec = Number.isFinite(Number(durationRaw)) && Number(durationRaw) >= 0 ? Math.round(Number(durationRaw)) : null;
+  const viewsRaw = v?.views ?? v?.view_count ?? v?.viewer_count;
+  const viewCount = Number.isFinite(Number(viewsRaw)) && viewsRaw != null ? Math.max(0, Math.round(Number(viewsRaw))) : null;
+  return {
+    externalId: String(id),
+    title,
+    url,
+    thumbnailUrl: typeof thumbnail === 'string' && thumbnail.startsWith('https://') ? thumbnail : null,
+    publishedAt: validDate(createdAt),
+    durationSec,
+    viewCount,
+  };
+}
 
 export function createKickProvider({ clientId, clientSecret, fetchImpl = fetch }) {
   let token = null;
@@ -52,12 +83,30 @@ export function createKickProvider({ clientId, clientSecret, fetchImpl = fetch }
     try {
       return await call(await appToken());
     } catch (err) {
-      if (err.status === 401) return call(await appToken(true)); // token revoked/expired early
+      if (err.status === 401) return call(await appToken(true));
       throw err;
     }
   }
 
-  /** Subscribe to livestream start/stop webhooks for these broadcasters (webhook URL is set in your Kick app settings). */
+  // Unofficial Kick website endpoint. Kick may change its response or block requests.
+  async function getPastVideos(slug) {
+    const url = `${WEB_API}/channels/${encodeURIComponent(slug)}/videos`;
+    const payload = await fetchJson('kick', url, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        Referer: `https://kick.com/${slug}`,
+      },
+      fetchImpl,
+      retries: 1,
+      timeoutMs: 12_000,
+    });
+    return asArray(payload).slice(0, MAX_VODS_PER_CHANNEL)
+      .map((v) => normalizeVod(v, slug))
+      .filter(Boolean);
+  }
+
+  /** Subscribe to livestream start/stop webhooks for these broadcasters. */
   async function subscribeLivestreamEvents(broadcasterIds) {
     const t = await appToken();
     const out = [];
@@ -115,15 +164,35 @@ export function createKickProvider({ clientId, clientSecret, fetchImpl = fetch }
               result.live.push({
                 accountId: acc.id,
                 memberId: acc.memberId,
-                // The public API exposes no livestream id here; broadcaster + start time is unique per broadcast.
                 externalId: `${ch.broadcaster_user_id}:${startedAt.getTime()}`,
-                stableId: Boolean(knownStart), // engine reuses the ongoing row when the start time is unknown
+                stableId: Boolean(knownStart),
                 title: String(ch.stream_title || `${slug} is live on Kick`).slice(0, 200),
                 url: `https://kick.com/${slug}`,
                 thumbnailUrl: typeof s.thumbnail === 'string' && s.thumbnail.startsWith('https://') ? s.thumbnail : null,
                 viewerCount: Number.isFinite(s.viewer_count) ? s.viewer_count : null,
                 startedAt,
               });
+            }
+
+            // Fetch past broadcasts independently; a VOD failure must not prevent live sync.
+            try {
+              const vods = await getPastVideos(slug);
+              for (const vod of vods) {
+                result.videos.push({
+                  accountId: acc.id,
+                  memberId: acc.memberId,
+                  externalId: vod.externalId,
+                  title: vod.title,
+                  url: vod.url,
+                  thumbnailUrl: vod.thumbnailUrl,
+                  publishedAt: vod.publishedAt,
+                  durationSec: vod.durationSec,
+                  viewCount: vod.viewCount,
+                });
+              }
+            } catch (err) {
+              // Keep the account sync usable even if Kick's unofficial VOD endpoint fails.
+              result.accounts.push({ id: acc.id, warning: `Past Kick videos could not be fetched: ${err.message}` });
             }
           }
         }
