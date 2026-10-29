@@ -36,7 +36,7 @@ export function isoDurationToSeconds(iso) {
 const bestThumb = (t = {}) => (t.maxres ?? t.standard ?? t.high ?? t.medium ?? t.default)?.url ?? null;
 const num = (v) => (v == null || v === '' ? null : Number(v));
 
-export function createYouTubeProvider({ apiKey, fetchImpl = fetch, videosPerChannel = 6 }) {
+export function createYouTubeProvider({ apiKey, fetchImpl = fetch, videosPerChannel = 500 }) {
   let unitsUsed = 0;
   const get = (path, params) => {
     const url = new URL(`${API}/${path}`);
@@ -80,31 +80,89 @@ export function createYouTubeProvider({ apiKey, fetchImpl = fetch, videosPerChan
         for (const c of r.items ?? []) channelInfo.set(c.id, c);
       }
 
-      // 3) Latest uploads per channel (live broadcasts appear here while live).
+      // 3) Fetch recent uploads using pagination, up to videosPerChannel per channel.
       const videoOwner = new Map(); // videoId → account
+
       for (const { acc, channelId } of resolved) {
         const info = channelInfo.get(channelId);
-        if (!info) { result.accounts.push({ id: acc.id, error: 'Channel not found (deleted or private?)' }); continue; }
+
+        if (!info) {
+          result.accounts.push({
+            id: acc.id,
+            error: 'Channel not found (deleted or private?)',
+          });
+          continue;
+        }
+
         const stats = info.statistics ?? {};
+
         result.accounts.push({
           id: acc.id,
           externalId: channelId,
-          followerCount: stats.hiddenSubscriberCount ? undefined : num(stats.subscriberCount),
-          // Public channel picture — used as the member's photo when an admin hasn't uploaded one.
-          ...(bestThumb(info.snippet?.thumbnails) && { avatarUrl: bestThumb(info.snippet.thumbnails) }),
+          followerCount: stats.hiddenSubscriberCount
+            ? undefined
+            : num(stats.subscriberCount),
+          ...(bestThumb(info.snippet?.thumbnails) && {
+            avatarUrl: bestThumb(info.snippet.thumbnails),
+          }),
         });
+
         const uploads = info.contentDetails?.relatedPlaylists?.uploads;
-        if (!uploads) { result.checkedAccountIds.push(acc.id); continue; }
+
+        if (!uploads) {
+          result.checkedAccountIds.push(acc.id);
+          continue;
+        }
+
         try {
-          const r = await get('playlistItems', { part: 'contentDetails', playlistId: uploads, maxResults: videosPerChannel });
-          for (const it of r.items ?? []) videoOwner.set(it.contentDetails.videoId, acc);
+          let pageToken;
+          let fetched = 0;
+
+          do {
+            const pageSize = Math.min(50, videosPerChannel - fetched);
+
+            const params = {
+              part: 'contentDetails',
+              playlistId: uploads,
+              maxResults: pageSize,
+            };
+
+            if (pageToken) {
+              params.pageToken = pageToken;
+            }
+
+            const r = await get('playlistItems', params);
+
+            for (const item of r.items ?? []) {
+              const videoId = item.contentDetails?.videoId;
+
+              if (videoId) {
+                videoOwner.set(videoId, acc);
+                fetched++;
+              }
+            }
+
+            pageToken = r.nextPageToken;
+          } while (pageToken && fetched < videosPerChannel);
+
           result.checkedAccountIds.push(acc.id);
         } catch (err) {
-          if (err.status === 404) { result.checkedAccountIds.push(acc.id); continue; } // channel has no uploads yet
-          if (err.status === 403) throw err;
-          result.accounts.push({ id: acc.id, error: err.message });
+          if (err.status === 404) {
+            result.checkedAccountIds.push(acc.id);
+            continue;
+          }
+
+          if (err.status === 403) {
+            throw err;
+          }
+
+          result.accounts.push({
+            id: acc.id,
+            error: err.message,
+          });
         }
       }
+
 
       // 4) Video details + live status in batches of 50.
       for (const ids of chunk([...videoOwner.keys()], 50)) {
