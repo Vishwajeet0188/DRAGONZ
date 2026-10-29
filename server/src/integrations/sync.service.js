@@ -70,7 +70,6 @@ async function persistAccounts(result, now) {
   }
 }
 
-```js
 async function persistVideos(platform, items) {
   for (const v of items) {
     await db.insert(videos).values({
@@ -101,7 +100,6 @@ async function persistVideos(platform, items) {
     });
   }
 }
-```
 
 async function persistLive(platform, result, now) {
   const checked = result.checkedAccountIds;
