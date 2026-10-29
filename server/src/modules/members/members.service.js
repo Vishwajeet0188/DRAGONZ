@@ -105,7 +105,7 @@ export async function getMemberProfile(slug, viewerId) {
   const id = member.id;
   const [[hydrated], latestVideos, featuredVideos, memberAchievements, memberMilestones, [{ followers }], highlights, viewerFollow] = await Promise.all([
     hydrateMembers([member]),
-    db.select().from(videos).where(and(eq(videos.memberId, id), eq(videos.isHidden, false), isNull(videos.deletedAt))).orderBy(desc(videos.publishedAt)).limit(8),
+    db.select().from(videos).where(and(eq(videos.memberId, id), eq(videos.isHidden, false), isNull(videos.deletedAt))).orderBy(desc(videos.publishedAt)).limit(1000),
     db.select().from(videos).where(and(eq(videos.memberId, id), eq(videos.isFeatured, true), eq(videos.isHidden, false), isNull(videos.deletedAt))).orderBy(desc(videos.publishedAt)).limit(4),
     db.select().from(achievements).where(eq(achievements.memberId, id)).orderBy(desc(achievements.achievedAt)).limit(12),
     db.select().from(milestones).where(eq(milestones.memberId, id)).orderBy(desc(milestones.achievedAt)).limit(12),
